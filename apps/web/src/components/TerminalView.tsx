@@ -20,7 +20,7 @@ interface TerminalViewProps {
 }
 
 export function TerminalView({ filePath }: TerminalViewProps) {
-  const [lines, setLines] = useState<{ text: string; isError: boolean }[]>([]);
+  const [lines, setLines] = useState<{ text: string; level: string }[]>([]);
   const [running, setRunning] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -63,19 +63,20 @@ export function TerminalView({ filePath }: TerminalViewProps) {
               ...prev,
               {
                 text: `\n── Workflow ${parsed.success ? "✓ SUCCESS" : "✗ FAILED"} ──`,
-                isError: !parsed.success,
+                level: parsed.success ? "info" : "error",
               },
             ]);
           } else if ("type" in parsed && parsed.type === "error") {
-            setLines((prev) => [...prev, { text: `[ERROR] ${parsed.message}`, isError: true }]);
+            setLines((prev) => [...prev, { text: `[ERROR] ${parsed.message}`, level: "error" }]);
           } else {
             const entry = parsed as LogEntry;
             const prefix = entry.step ? `[${entry.step}] ` : "";
+            const toolPrefix = entry.level === "tool_use" ? "⚙ " : "";
             setLines((prev) => [
               ...prev,
               {
-                text: `${prefix}${entry.message}`,
-                isError: entry.level === "error" || entry.level === "stderr",
+                text: `${prefix}${toolPrefix}${entry.message}`,
+                level: entry.level,
               },
             ]);
           }
@@ -141,7 +142,14 @@ export function TerminalView({ filePath }: TerminalViewProps) {
             key={i}
             style={{
               whiteSpace: "pre-wrap",
-              color: line.isError ? "#f87171" : "#86efac",
+              color:
+                line.level === "error" || line.level === "stderr"
+                  ? "#f87171"
+                  : line.level === "tool_use"
+                    ? "#fbbf24"
+                    : line.level === "tool_result"
+                      ? "#67e8f9"
+                      : "#86efac",
             }}
           >
             {line.text}

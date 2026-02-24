@@ -89,17 +89,36 @@ export class WorkflowRunner extends EventEmitter {
       this.log("info", `Running Claude agent: ${step.name}`, step.name);
       const args: string[] = [];
       if (step.skip_permission) args.push("--dangerously-skip-permissions");
+      args.push("--output-format", "stream-json", "--verbose");
       if (step.prompt) args.push("--print", step.prompt);
 
       const child = spawn("claude", args, { stdio: ["ignore", "pipe", "pipe"] });
 
+      let buffer = "";
       child.stdout.on("data", (chunk: Buffer) => {
-        this.log("stdout", chunk.toString(), step.name);
+        buffer += chunk.toString();
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            this.handleClaudeEvent(JSON.parse(line), step.name);
+          } catch {
+            this.log("stdout", line, step.name);
+          }
+        }
       });
       child.stderr.on("data", (chunk: Buffer) => {
         this.log("stderr", chunk.toString(), step.name);
       });
       child.on("close", (code) => {
+        if (buffer.trim()) {
+          try {
+            this.handleClaudeEvent(JSON.parse(buffer), step.name);
+          } catch {
+            this.log("stdout", buffer, step.name);
+          }
+        }
         resolve({ name: step.name, success: code === 0, exitCode: code });
       });
       child.on("error", (err) => {
@@ -107,6 +126,39 @@ export class WorkflowRunner extends EventEmitter {
         resolve({ name: step.name, success: false, exitCode: null });
       });
     });
+  }
+
+  private handleClaudeEvent(event: Record<string, unknown>, stepName: string): void {
+    switch (event.type) {
+      case "assistant": {
+        const msg = event.message as {
+          content: Array<{
+            type: string;
+            text?: string;
+            name?: string;
+            input?: unknown;
+          }>;
+        };
+        for (const block of msg.content ?? []) {
+          if (block.type === "text" && block.text) {
+            this.log("stdout", block.text, stepName);
+          } else if (block.type === "tool_use") {
+            this.log("tool_use", `${block.name}(${JSON.stringify(block.input)})`, stepName);
+          }
+        }
+        break;
+      }
+      case "tool": {
+        const output = event.content as string;
+        if (output) this.log("tool_result", output, stepName);
+        break;
+      }
+      case "result": {
+        const cost = event.total_cost_usd;
+        if (cost !== null) this.log("info", `Cost: $${(cost as number).toFixed(6)}`, stepName);
+        break;
+      }
+    }
   }
 
   abort(): void {

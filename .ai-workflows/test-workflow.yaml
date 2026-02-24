@@ -1,8 +1,8 @@
-name: "測試工作流"
+name: "Test Workflow"
 workflow:
-  - name: "執行普通指令"
-    run: "echo 'Hello World'"
-  - name: "執行 AI 任務"
+  - name: "List project structure"
+    run: "find . -name '*.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' | head -20"
+  - name: "Analyze code"
     agent: claude
-    prompt: "請回覆我一句話：準備就緒"
+    prompt: "Read the file packages/core/src/WorkflowRunner.ts and explain its architecture and main responsibilities."
     skip_permission: true

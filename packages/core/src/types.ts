@@ -11,7 +11,7 @@ export interface WorkflowDefinition {
   workflow: WorkflowStep[];
 }
 
-export type LogLevel = "info" | "error" | "stdout" | "stderr";
+export type LogLevel = "info" | "error" | "stdout" | "stderr" | "tool_use" | "tool_result";
 
 export interface LogEntry {
   level: LogLevel;

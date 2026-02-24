@@ -18,7 +18,11 @@ program
       const line = `${prefix}${entry.message}`;
       const out = line.endsWith("\n") ? line : line + "\n";
       if (entry.level === "error" || entry.level === "stderr") {
-        process.stderr.write(out);
+        process.stderr.write(`\x1b[31m${out}\x1b[0m`);
+      } else if (entry.level === "tool_use") {
+        process.stdout.write(`\x1b[33m⚙ ${out}\x1b[0m`);
+      } else if (entry.level === "tool_result") {
+        process.stdout.write(`\x1b[36m${out}\x1b[0m`);
       } else {
         process.stdout.write(out);
       }
