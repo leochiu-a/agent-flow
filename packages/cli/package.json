@@ -12,11 +12,11 @@
   },
   "dependencies": {
     "@agent-flow/core": "workspace:*",
-    "commander": "^12.0.0"
+    "commander": "^14.0.3"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsdown": "^0.12.0",
+    "@types/node": "^25.3.0",
+    "tsdown": "^0.20.3",
     "typescript": "~5.9.3"
   }
 }
