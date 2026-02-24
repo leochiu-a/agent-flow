@@ -91,7 +91,7 @@ export class WorkflowRunner extends EventEmitter {
       if (step.skip_permission) args.push("--dangerously-skip-permissions");
       if (step.prompt) args.push("--print", step.prompt);
 
-      const child = spawn("claude", args, { stdio: "pipe" });
+      const child = spawn("claude", args, { stdio: ["ignore", "pipe", "pipe"] });
 
       child.stdout.on("data", (chunk: Buffer) => {
         this.log("stdout", chunk.toString(), step.name);
