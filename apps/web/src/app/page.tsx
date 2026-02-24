@@ -44,14 +44,13 @@ export default function Home() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div
-            className="min-h-0 transition-all duration-300"
-            style={{ flex: showTerminal ? "0 0 62%" : 1 }}
+            className={`min-h-0 transition-all duration-300 ${showTerminal ? "basis-[62%]" : "flex-1"}`}
           >
             <WorkflowCanvas onLinesChange={setLines} onRunningChange={handleRunningChange} />
           </div>
 
           {showTerminal && (
-            <div className="min-h-0" style={{ flex: "0 0 38%" }}>
+            <div className="min-h-0 basis-[38%]">
               <TerminalPanel
                 lines={lines}
                 running={running}
