@@ -6,5 +6,5 @@ export default defineConfig({
   platform: "node",
   dts: false,
   clean: true,
-  banner: { js: "#!/usr/bin/env node" },
+  noExternal: ["@agent-flow/core"],
 });
