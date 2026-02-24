@@ -26,9 +26,9 @@ export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
   }, [lines]);
 
   return (
-    <section className="flex h-full flex-col border-t border-[#E5E7EB] bg-white">
-      <div className="flex shrink-0 items-center gap-2 border-b border-[#E5E7EB] px-3.5 py-1.5">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-[#9CA3AF]">Output</span>
+    <section className="flex h-full flex-col border-t border-border bg-white">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3.5 py-1.5">
+        <span className="text-[11px] uppercase tracking-[0.14em] text-muted-fg">Output</span>
 
         {running && (
           <span className="inline-flex items-center gap-1.5 text-[11px] text-orange">
@@ -41,15 +41,15 @@ export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
           type="button"
           onClick={onClose}
           title="Close output panel"
-          className="ml-auto rounded px-1 text-sm text-[#9CA3AF] transition hover:text-pink"
+          className="ml-auto rounded px-1 text-sm text-muted-fg transition hover:text-pink"
         >
           ✕
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-[#F9FAFB] px-4 py-3 font-mono text-xs leading-relaxed">
+      <div className="flex-1 overflow-y-auto bg-surface px-4 py-3 font-mono text-xs leading-relaxed">
         {lines.length === 0 && (
-          <span className="text-[#D1D5DB]">
+          <span className="text-placeholder">
             {running ? "Starting..." : "Output will appear here after you click Run."}
           </span>
         )}

@@ -37,9 +37,9 @@ export default function Home() {
 
   return (
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-canvas text-dark">
-      <header className="flex h-12 shrink-0 items-center border-b border-[#E5E7EB] bg-white px-4 shadow-sm">
+      <header className="flex h-12 shrink-0 items-center border-b border-border bg-white px-4 shadow-sm">
         <span className="text-sm font-bold tracking-wide text-pink">AGENT FLOW</span>
-        <span className="ml-3 text-[11px] uppercase tracking-[0.14em] text-[#9CA3AF]">
+        <span className="ml-3 text-[11px] uppercase tracking-[0.14em] text-muted-fg">
           Visual Workflow Builder
         </span>
 
@@ -48,7 +48,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setShowTerminal(true)}
-              className="rounded-md border border-[#E5E7EB] px-2.5 py-1 text-[11px] text-[#6B7280] transition hover:border-pink hover:text-pink"
+              className="rounded-md border border-border px-2.5 py-1 text-[11px] text-secondary transition hover:border-pink hover:text-pink"
             >
               Show Output
             </button>

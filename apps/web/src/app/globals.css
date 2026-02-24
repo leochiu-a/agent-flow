@@ -2,11 +2,19 @@
 
 @theme {
   --color-pink: #EA4B71;
+  --color-pink-subtle: #FFF5F7;
   --color-navy: #101330;
   --color-dark: #1F2937;
+  --color-ink: #374151;
   --color-orange: #EA320D;
   --color-light: #FCFCFD;
   --color-canvas: #F8F9FA;
+  --color-surface: #F9FAFB;
+  --color-disabled: #F3F4F6;
+  --color-border: #E5E7EB;
+  --color-placeholder: #D1D5DB;
+  --color-muted-fg: #9CA3AF;
+  --color-secondary: #6B7280;
 }
 
 :root {
@@ -23,7 +31,7 @@ body {
 
 body {
   margin: 0;
-  background: #F8F9FA;
+  background: var(--color-canvas);
   color: var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -35,11 +43,11 @@ body {
 
 .react-flow__controls-button {
   background: #FFFFFF !important;
-  border-color: #E5E7EB !important;
-  color: #6B7280 !important;
-  fill: #6B7280 !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-secondary) !important;
+  fill: var(--color-secondary) !important;
 }
 
 .react-flow__controls-button:hover {
-  background: #F3F4F6 !important;
+  background: var(--color-disabled) !important;
 }

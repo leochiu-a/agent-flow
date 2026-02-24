@@ -93,7 +93,7 @@ export function WorkflowCanvas({
       source: node.id,
       target: newNodes[i + 1].id,
       animated: true,
-      style: { stroke: "#EA4B71", strokeWidth: 2 },
+      style: { stroke: "var(--color-pink)", strokeWidth: 2 },
     }));
 
     setNodes(newNodes);
@@ -130,7 +130,7 @@ export function WorkflowCanvas({
               source: lastNode.id,
               target: id,
               animated: true,
-              style: { stroke: "#EA4B71", strokeWidth: 2 },
+              style: { stroke: "var(--color-pink)", strokeWidth: 2 },
             },
           ]);
         }
@@ -145,7 +145,7 @@ export function WorkflowCanvas({
     (connection: Connection) =>
       setEdges((eds) =>
         addEdge(
-          { ...connection, animated: true, style: { stroke: "#EA4B71", strokeWidth: 2 } },
+          { ...connection, animated: true, style: { stroke: "var(--color-pink)", strokeWidth: 2 } },
           eds,
         ),
       ),
@@ -295,11 +295,11 @@ export function WorkflowCanvas({
 
   return (
     <div className="relative h-full w-full">
-      <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
+      <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
         <ToolbarButton
           onClick={() => addNode("claude")}
           disabled={running}
-          className="bg-pink hover:bg-pink/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
+          className="bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
         >
           + Claude Agent
         </ToolbarButton>
@@ -307,17 +307,17 @@ export function WorkflowCanvas({
         <ToolbarButton
           onClick={() => addNode("shell")}
           disabled={running}
-          className="bg-orange hover:bg-orange/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
+          className="bg-orange hover:bg-orange/90 disabled:bg-disabled disabled:text-muted-fg"
         >
           + Shell Step
         </ToolbarButton>
 
-        <div className="mx-1 h-6 w-px bg-[#E5E7EB]" />
+        <div className="mx-1 h-6 w-px bg-border" />
 
         <ToolbarButton
           onClick={runWorkflow}
           disabled={running || nodes.length === 0}
-          className="bg-pink hover:bg-pink/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
+          className="bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
         >
           {running ? (
             <>
@@ -331,16 +331,16 @@ export function WorkflowCanvas({
 
         {selectedFile && (
           <>
-            <div className="mx-1 h-6 w-px bg-[#E5E7EB]" />
+            <div className="mx-1 h-6 w-px bg-border" />
             <ToolbarButton
               onClick={() => void saveWorkflow()}
               disabled={saveStatus === "saving" || nodes.length === 0}
               className={
                 saveStatus === "saved"
-                  ? "bg-orange hover:bg-orange/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
+                  ? "bg-orange hover:bg-orange/90 disabled:bg-disabled disabled:text-muted-fg"
                   : saveStatus === "error"
-                    ? "bg-pink hover:bg-pink/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
-                    : "bg-[#1F2937] hover:bg-[#374151] disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
+                    ? "bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
+                    : "bg-dark hover:bg-ink disabled:bg-disabled disabled:text-muted-fg"
               }
             >
               {saveStatus === "saving"
@@ -356,7 +356,7 @@ export function WorkflowCanvas({
       </div>
 
       {nodes.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#D1D5DB]">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-placeholder">
           <svg
             width="64"
             height="64"
@@ -384,18 +384,23 @@ export function WorkflowCanvas({
         fitView
         fitViewOptions={{ padding: 0.4, maxZoom: 1 }}
         minZoom={0.3}
-        style={{ background: "#F8F9FA" }}
+        style={{ background: "var(--color-canvas)" }}
         defaultEdgeOptions={{
           animated: true,
-          style: { stroke: "#EA4B71", strokeWidth: 2 },
+          style: { stroke: "var(--color-pink)", strokeWidth: 2 },
         }}
       >
-        <Background color="#E5E7EB" variant={BackgroundVariant.Dots} gap={28} size={1.5} />
+        <Background
+          color="var(--color-border)"
+          variant={BackgroundVariant.Dots}
+          gap={28}
+          size={1.5}
+        />
         <Controls
           showInteractive={false}
           style={{
             background: "#FFFFFF",
-            border: "1px solid #E5E7EB",
+            border: "1px solid var(--color-border)",
             borderRadius: 8,
           }}
         />
