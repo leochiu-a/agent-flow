@@ -5,6 +5,7 @@ interface SessionItemProps {
   session: SessionSummary;
   workflowFile: string;
   isLoading: boolean;
+  isActive: boolean;
   isDeleting: boolean;
   onClick: () => void;
   onDelete: (e: React.MouseEvent) => void;
@@ -13,6 +14,7 @@ interface SessionItemProps {
 export function SessionItem({
   session,
   isLoading,
+  isActive,
   isDeleting,
   onClick,
   onDelete,
@@ -25,7 +27,7 @@ export function SessionItem({
       onKeyDown={(e) => {
         if (!isLoading && (e.key === "Enter" || e.key === " ")) onClick();
       }}
-      className={`group flex w-full items-start gap-1.5 px-3 py-1.5 text-left transition hover:bg-surface ${isLoading ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
+      className={`group flex w-full items-start gap-1.5 px-3 py-1.5 text-left transition hover:bg-surface ${isActive ? "bg-pink-subtle" : ""} ${isLoading ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
     >
       {/* Status dot */}
       <span

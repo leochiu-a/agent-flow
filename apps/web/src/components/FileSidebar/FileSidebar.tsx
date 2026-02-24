@@ -32,6 +32,7 @@ export function FileSidebar({
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
   const [loadingSessionDetail, setLoadingSessionDetail] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   const fetchFiles = useCallback(async () => {
     try {
@@ -123,6 +124,7 @@ export function FileSidebar({
   const handleSessionClick = async (sessionId: string, workflowFile: string) => {
     if (loadingSessionDetail) return;
     setLoadingSessionDetail(sessionId);
+    setSelectedSession(sessionId);
     try {
       const res = await fetch(
         `/api/workflow/session/${encodeURIComponent(sessionId)}?file=${encodeURIComponent(workflowFile)}`,
@@ -198,6 +200,7 @@ export function FileSidebar({
               sessions={sessionsByFile[filename] ?? []}
               isLoadingSessions={loadingSessions.has(filename)}
               loadingSessionDetail={loadingSessionDetail}
+              selectedSession={selectedSession}
               deletingSession={deletingSession}
               onWorkflowClick={() => void handleWorkflowClick(filename)}
               onSessionClick={(sessionId) => void handleSessionClick(sessionId, filename)}

@@ -9,6 +9,7 @@ interface WorkflowItemProps {
   sessions: SessionSummary[];
   isLoadingSessions: boolean;
   loadingSessionDetail: string | null;
+  selectedSession: string | null;
   deletingSession: string | null;
   onWorkflowClick: () => void;
   onSessionClick: (sessionId: string) => void;
@@ -23,6 +24,7 @@ export function WorkflowItem({
   sessions,
   isLoadingSessions,
   loadingSessionDetail,
+  selectedSession,
   deletingSession,
   onWorkflowClick,
   onSessionClick,
@@ -72,6 +74,7 @@ export function WorkflowItem({
                 session={session}
                 workflowFile={filename}
                 isLoading={loadingSessionDetail === session.id}
+                isActive={selectedSession === session.id}
                 isDeleting={deletingSession === session.id}
                 onClick={() => onSessionClick(session.id)}
                 onDelete={(e) => onDeleteSession(e, session.id)}
