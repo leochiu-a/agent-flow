@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 interface FileSidebarProps {
-  onSelectFile?: (filename: string, filePath: string) => void;
+  onSelectFile?: (filename: string, content: string) => void;
 }
 
 const DEFAULT_YAML = `name: "New Workflow"
@@ -38,7 +38,7 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
     void fetchFiles();
   }, [fetchFiles]);
 
-  const selectFile = async (filename: string, dir: string) => {
+  const selectFile = async (filename: string) => {
     setSelected(filename);
     setFileContent(null);
     setLoading(true);
@@ -46,8 +46,9 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
     try {
       const res = await fetch(`/api/workflow/read?file=${encodeURIComponent(filename)}`);
       const data = (await res.json()) as { content?: string };
-      setFileContent(data.content ?? null);
-      onSelectFile?.(filename, `${dir}/${filename}`);
+      const content = data.content ?? "";
+      setFileContent(content || null);
+      onSelectFile?.(filename, content);
     } catch {
       setFileContent(null);
     } finally {
@@ -119,7 +120,7 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
             <button
               key={filename}
               type="button"
-              onClick={() => void selectFile(filename, "")}
+              onClick={() => void selectFile(filename)}
               className={`block w-full truncate border-l-2 px-3 py-2 text-left text-xs transition ${
                 selected === filename
                   ? "border-cyan-400 bg-slate-900 text-slate-100"

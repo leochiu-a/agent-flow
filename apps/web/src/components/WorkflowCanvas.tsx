@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -14,7 +14,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type { LogEntry } from "@agent-flow/core";
+import type { LogEntry, WorkflowDefinition } from "@agent-flow/core";
 import { StepNode } from "./StepNode";
 import type { StepNodeData } from "./StepNode";
 
@@ -26,13 +26,18 @@ export interface LogLine {
 interface WorkflowCanvasProps {
   onLinesChange: (updater: (prev: LogLine[]) => LogLine[]) => void;
   onRunningChange: (running: boolean) => void;
+  workflowDefinition?: WorkflowDefinition | null;
 }
 
 const nodeTypes = { step: StepNode };
 
 const newId = () => `step-${crypto.randomUUID().slice(0, 8)}`;
 
-export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanvasProps) {
+export function WorkflowCanvas({
+  onLinesChange,
+  onRunningChange,
+  workflowDefinition,
+}: WorkflowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [running, setRunning] = useState(false);
@@ -57,6 +62,37 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
     setNodesRef.current((nds) => nds.filter((node) => node.id !== id));
     setEdgesRef.current((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
   }, []);
+
+  useEffect(() => {
+    if (!workflowDefinition?.workflow?.length) return;
+
+    const newNodes: Node[] = workflowDefinition.workflow.map((step, i) => {
+      const id = newId();
+      return {
+        id,
+        type: "step",
+        position: { x: 60 + i * 340, y: 120 },
+        data: {
+          title: step.name,
+          type: step.agent === "claude" ? "claude" : "shell",
+          prompt: step.agent === "claude" ? (step.prompt ?? "") : (step.run ?? ""),
+          onUpdate,
+          onDelete,
+        },
+      };
+    });
+
+    const newEdges: Edge[] = newNodes.slice(0, -1).map((node, i) => ({
+      id: `e-${node.id}-${newNodes[i + 1].id}`,
+      source: node.id,
+      target: newNodes[i + 1].id,
+      animated: true,
+      style: { stroke: "#334155", strokeWidth: 2 },
+    }));
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }, [workflowDefinition, onUpdate, onDelete, setNodes, setEdges]);
 
   const addNode = useCallback(
     (type: "claude" | "shell") => {

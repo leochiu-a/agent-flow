@@ -1,15 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { load as yamlLoad } from "js-yaml";
 import { FileSidebar } from "@/components/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
 import { WorkflowCanvas } from "@/components/WorkflowCanvas";
 import type { LogLine } from "@/components/WorkflowCanvas";
+import type { WorkflowDefinition } from "@agent-flow/core";
 
 export default function Home() {
   const [lines, setLines] = useState<LogLine[]>([]);
   const [running, setRunning] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [workflowDefinition, setWorkflowDefinition] = useState<WorkflowDefinition | null>(null);
+
+  const handleSelectFile = (_filename: string, content: string) => {
+    try {
+      const parsed = yamlLoad(content) as WorkflowDefinition;
+      setWorkflowDefinition(parsed);
+    } catch {
+      // ignore invalid YAML
+    }
+  };
 
   const handleRunningChange = (nextRunning: boolean) => {
     setRunning(nextRunning);
@@ -40,13 +52,17 @@ export default function Home() {
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <FileSidebar />
+        <FileSidebar onSelectFile={handleSelectFile} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div
             className={`min-h-0 transition-all duration-300 ${showTerminal ? "basis-[62%]" : "flex-1"}`}
           >
-            <WorkflowCanvas onLinesChange={setLines} onRunningChange={handleRunningChange} />
+            <WorkflowCanvas
+              onLinesChange={setLines}
+              onRunningChange={handleRunningChange}
+              workflowDefinition={workflowDefinition}
+            />
           </div>
 
           {showTerminal && (
