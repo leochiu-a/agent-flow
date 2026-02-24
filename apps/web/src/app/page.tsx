@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { load as yamlLoad } from "js-yaml";
-import { FileSidebar } from "@/components/FileSidebar";
+import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
 import { WorkflowCanvas } from "@/components/WorkflowCanvas";
 import type { LogLine } from "@/components/WorkflowCanvas";
