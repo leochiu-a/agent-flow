@@ -41,6 +41,36 @@ body {
   box-sizing: border-box;
 }
 
+/* OutputLoadingIndicator animations */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes fade-in-out {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .loading-cursor {
+    animation: blink-cursor 750ms step-end infinite;
+  }
+  .loading-row-text {
+    animation: fade-in-out 900ms ease-in-out infinite;
+  }
+  .loading-dot {
+    animation: dot-pulse 1.2s ease-in-out infinite;
+  }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+}
+
 .react-flow__controls-button {
   background: #FFFFFF !important;
   border-color: var(--color-border) !important;
