@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { WorkflowCanvas } from "@/components/WorkflowCanvas";
 import { TerminalPanel } from "@/components/TerminalPanel";
+import { FileSidebar } from "@/components/FileSidebar";
 import type { LogLine } from "@/components/WorkflowCanvas";
 
 export default function Home() {
@@ -55,23 +56,36 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Canvas */}
-      <div
-        style={{
-          flex: showTerminal ? "0 0 62%" : 1,
-          minHeight: 0,
-          transition: "flex 0.25s ease",
-        }}
-      >
-        <WorkflowCanvas onLinesChange={setLines} onRunningChange={handleRunningChange} />
-      </div>
+      {/* Main content row: sidebar + canvas */}
+      <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
+        {/* File browser sidebar */}
+        <FileSidebar />
 
-      {/* Terminal panel — slides in from bottom */}
-      {showTerminal && (
-        <div style={{ flex: "0 0 38%", minHeight: 0 }}>
-          <TerminalPanel lines={lines} running={running} onClose={() => setShowTerminal(false)} />
+        {/* Canvas + terminal column */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          {/* Canvas */}
+          <div
+            style={{
+              flex: showTerminal ? "0 0 62%" : 1,
+              minHeight: 0,
+              transition: "flex 0.25s ease",
+            }}
+          >
+            <WorkflowCanvas onLinesChange={setLines} onRunningChange={handleRunningChange} />
+          </div>
+
+          {/* Terminal panel — slides in from bottom */}
+          {showTerminal && (
+            <div style={{ flex: "0 0 38%", minHeight: 0 }}>
+              <TerminalPanel
+                lines={lines}
+                running={running}
+                onClose={() => setShowTerminal(false)}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
