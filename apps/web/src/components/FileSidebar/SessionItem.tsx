@@ -18,11 +18,14 @@ export function SessionItem({
   onDelete,
 }: SessionItemProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={isLoading}
-      className="group flex w-full items-start gap-1.5 px-3 py-1.5 text-left transition hover:bg-surface disabled:opacity-60"
+    <div
+      role="button"
+      tabIndex={isLoading ? -1 : 0}
+      onClick={isLoading ? undefined : onClick}
+      onKeyDown={(e) => {
+        if (!isLoading && (e.key === "Enter" || e.key === " ")) onClick();
+      }}
+      className={`group flex w-full items-start gap-1.5 px-3 py-1.5 text-left transition hover:bg-surface ${isLoading ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
     >
       {/* Status dot */}
       <span
@@ -55,6 +58,6 @@ export function SessionItem({
           />
         </svg>
       </button>
-    </button>
+    </div>
   );
 }
