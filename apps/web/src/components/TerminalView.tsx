@@ -81,7 +81,7 @@ export function TerminalView({ filePath }: TerminalViewProps) {
             ]);
           }
         } catch {
-          setLines((prev) => [...prev, { text: part, isError: false }]);
+          setLines((prev) => [...prev, { text: part, level: "info" }]);
         }
       }
     }
