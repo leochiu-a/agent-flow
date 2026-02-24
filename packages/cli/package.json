@@ -1,0 +1,21 @@
+{
+  "name": "@agent-flow/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "agent-flow": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agent-flow/core": "workspace:*",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~5.9.3"
+  }
+}
