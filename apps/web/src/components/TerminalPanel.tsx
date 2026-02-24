@@ -9,13 +9,13 @@ interface TerminalPanelProps {
   onClose: () => void;
 }
 
-const levelColor: Record<string, string> = {
-  info: "#86efac",
-  stdout: "#86efac",
-  stderr: "#f87171",
-  error: "#f87171",
-  tool_use: "#fbbf24",
-  tool_result: "#67e8f9",
+const levelColorClass: Record<string, string> = {
+  info: "text-emerald-300",
+  stdout: "text-emerald-300",
+  stderr: "text-rose-400",
+  error: "text-rose-400",
+  tool_use: "text-amber-300",
+  tool_result: "text-cyan-300",
 };
 
 export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
@@ -26,104 +26,45 @@ export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
   }, [lines]);
 
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: "#020617",
-        borderTop: "1px solid #1e293b",
-      }}
-    >
-      {/* Panel header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 14px",
-          borderBottom: "1px solid #0f172a",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{ fontSize: 11, color: "#475569", letterSpacing: 1, textTransform: "uppercase" }}
-        >
-          Output
-        </span>
+    <section className="flex h-full flex-col border-t border-slate-800 bg-slate-950/85">
+      <div className="flex shrink-0 items-center gap-2 border-b border-slate-900 px-3.5 py-1.5">
+        <span className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Output</span>
+
         {running && (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 11,
-              color: "#fbbf24",
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "#fbbf24",
-                display: "inline-block",
-                animation: "pulse 1s infinite",
-              }}
-            />
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-300">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-300" />
             running
           </span>
         )}
+
         <button
+          type="button"
           onClick={onClose}
           title="Close output panel"
-          style={{
-            marginLeft: "auto",
-            background: "transparent",
-            border: "none",
-            color: "#334155",
-            cursor: "pointer",
-            fontSize: 15,
-            lineHeight: 1,
-            padding: "0 4px",
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#94a3b8")}
-          onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#334155")}
+          className="ml-auto rounded px-1 text-sm text-slate-500 transition hover:text-slate-300"
         >
           ✕
         </button>
       </div>
 
-      {/* Log lines */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "12px 16px",
-          fontFamily: "monospace",
-          fontSize: 12,
-          lineHeight: 1.7,
-        }}
-      >
+      <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-xs leading-relaxed">
         {lines.length === 0 && (
-          <span style={{ color: "#1e293b" }}>
+          <span className="text-slate-600">
             {running ? "Starting..." : "Output will appear here after you click Run."}
           </span>
         )}
-        {lines.map((line, i) => (
+
+        {lines.map((line, index) => (
           <div
-            key={i}
-            style={{
-              whiteSpace: "pre-wrap",
-              color: levelColor[line.level] ?? "#86efac",
-            }}
+            key={`${line.level}-${index}`}
+            className={`whitespace-pre-wrap ${levelColorClass[line.level] ?? "text-emerald-300"}`}
           >
             {line.text}
           </div>
         ))}
+
         <div ref={bottomRef} />
       </div>
-    </div>
+    </section>
   );
 }

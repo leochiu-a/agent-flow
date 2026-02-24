@@ -18,7 +18,7 @@ export function WorkflowSidebar({ onSelect }: WorkflowSidebarProps) {
 
   useEffect(() => {
     fetch("/api/workflow/list")
-      .then((r) => r.json() as Promise<WorkflowListResponse>)
+      .then((res) => res.json() as Promise<WorkflowListResponse>)
       .then((data) => {
         setWorkflows(data.workflows);
         setDir(data.dir);
@@ -27,60 +27,35 @@ export function WorkflowSidebar({ onSelect }: WorkflowSidebarProps) {
   }, []);
 
   const handleSelect = (file: string) => {
-    const fullPath = `${dir}/${file}`;
     setSelected(file);
-    onSelect(fullPath);
+    onSelect(`${dir}/${file}`);
   };
 
   return (
-    <aside
-      style={{
-        width: 260,
-        borderRight: "1px solid #2a2a2a",
-        padding: "16px 12px",
-        overflowY: "auto",
-        flexShrink: 0,
-      }}
-    >
-      <h2
-        style={{
-          fontSize: 11,
-          color: "#555",
-          margin: "0 0 12px",
-          textTransform: "uppercase",
-          letterSpacing: 1.5,
-        }}
-      >
-        Workflows
-      </h2>
+    <aside className="w-64 shrink-0 overflow-y-auto border-r border-slate-800 px-3 py-4">
+      <h2 className="mb-3 text-[11px] uppercase tracking-[0.14em] text-slate-500">Workflows</h2>
 
       {workflows.length === 0 && (
-        <p style={{ color: "#444", fontSize: 12, lineHeight: 1.6 }}>
+        <p className="text-xs leading-relaxed text-slate-500">
           No workflows found in
           <br />
-          <code style={{ color: "#666", fontSize: 11 }}>{dir}</code>
+          <code className="text-[11px] text-slate-400">{dir}</code>
         </p>
       )}
 
-      <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-        {workflows.map((wf) => (
-          <li key={wf}>
+      <ul className="m-0 list-none p-0">
+        {workflows.map((workflow) => (
+          <li key={workflow}>
             <button
-              onClick={() => handleSelect(wf)}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                background: selected === wf ? "#1e3a5f" : "transparent",
-                border: "none",
-                color: selected === wf ? "#60a5fa" : "#aaa",
-                padding: "8px 10px",
-                borderRadius: 4,
-                cursor: "pointer",
-                fontSize: 13,
-                marginBottom: 2,
-              }}
+              type="button"
+              onClick={() => handleSelect(workflow)}
+              className={`mb-1 w-full rounded px-2.5 py-2 text-left text-xs transition ${
+                selected === workflow
+                  ? "bg-cyan-950/70 text-cyan-200"
+                  : "text-slate-300 hover:bg-slate-900 hover:text-slate-100"
+              }`}
             >
-              {wf}
+              {workflow}
             </button>
           </li>
         ))}

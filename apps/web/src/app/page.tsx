@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { WorkflowCanvas } from "@/components/WorkflowCanvas";
-import { TerminalPanel } from "@/components/TerminalPanel";
 import { FileSidebar } from "@/components/FileSidebar";
+import { TerminalPanel } from "@/components/TerminalPanel";
+import { WorkflowCanvas } from "@/components/WorkflowCanvas";
 import type { LogLine } from "@/components/WorkflowCanvas";
 
 export default function Home() {
@@ -11,44 +11,27 @@ export default function Home() {
   const [running, setRunning] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
 
-  const handleRunningChange = (r: boolean) => {
-    setRunning(r);
-    if (r) setShowTerminal(true);
+  const handleRunningChange = (nextRunning: boolean) => {
+    setRunning(nextRunning);
+    if (nextRunning) {
+      setShowTerminal(true);
+    }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      {/* Header */}
-      <header
-        style={{
-          height: 44,
-          borderBottom: "1px solid #0f172a",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
-          flexShrink: 0,
-          background: "#020617",
-        }}
-      >
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#60a5fa", letterSpacing: 0.5 }}>
-          ⚡ Agent Flow
-        </span>
-        <span style={{ fontSize: 11, color: "#334155", marginLeft: 12 }}>
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-slate-950/70 text-slate-100">
+      <header className="flex h-12 shrink-0 items-center border-b border-slate-800/80 bg-slate-950/90 px-4 backdrop-blur-sm">
+        <span className="text-sm font-bold tracking-wide text-cyan-400">AGENT FLOW</span>
+        <span className="ml-3 text-[11px] uppercase tracking-[0.14em] text-slate-500">
           Visual Workflow Builder
         </span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+
+        <div className="ml-auto flex items-center gap-2">
           {lines.length > 0 && !showTerminal && (
             <button
+              type="button"
               onClick={() => setShowTerminal(true)}
-              style={{
-                background: "transparent",
-                border: "1px solid #334155",
-                color: "#94a3b8",
-                padding: "4px 10px",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontSize: 11,
-              }}
+              className="rounded-md border border-slate-700 px-2.5 py-1 text-[11px] text-slate-300 transition hover:border-slate-500 hover:text-slate-100"
             >
               Show Output
             </button>
@@ -56,27 +39,19 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main content row: sidebar + canvas */}
-      <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
-        {/* File browser sidebar */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <FileSidebar />
 
-        {/* Canvas + terminal column */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-          {/* Canvas */}
+        <div className="flex min-w-0 flex-1 flex-col">
           <div
-            style={{
-              flex: showTerminal ? "0 0 62%" : 1,
-              minHeight: 0,
-              transition: "flex 0.25s ease",
-            }}
+            className="min-h-0 transition-all duration-300"
+            style={{ flex: showTerminal ? "0 0 62%" : 1 }}
           >
             <WorkflowCanvas onLinesChange={setLines} onRunningChange={handleRunningChange} />
           </div>
 
-          {/* Terminal panel — slides in from bottom */}
           {showTerminal && (
-            <div style={{ flex: "0 0 38%", minHeight: 0 }}>
+            <div className="min-h-0" style={{ flex: "0 0 38%" }}>
               <TerminalPanel
                 lines={lines}
                 running={running}

@@ -1,22 +1,22 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import {
-  ReactFlow,
   Background,
-  Controls,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  type Connection,
-  type Node,
-  type Edge,
   BackgroundVariant,
+  Controls,
+  ReactFlow,
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  type Connection,
+  type Edge,
+  type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import type { LogEntry } from "@agent-flow/core";
 import { StepNode } from "./StepNode";
 import type { StepNodeData } from "./StepNode";
-import type { LogEntry } from "@agent-flow/core";
 
 export interface LogLine {
   text: string;
@@ -37,7 +37,6 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [running, setRunning] = useState(false);
 
-  // Stable ref so onUpdate/onDelete never change reference
   const setNodesRef = useRef(setNodes);
   setNodesRef.current = setNodes;
   const setEdgesRef = useRef(setEdges);
@@ -46,20 +45,23 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
   const onUpdate = useCallback(
     (id: string, updates: Partial<Pick<StepNodeData, "title" | "type" | "prompt">>) => {
       setNodesRef.current((nds) =>
-        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...updates } } : n)),
+        nds.map((node) =>
+          node.id === id ? { ...node, data: { ...node.data, ...updates } } : node,
+        ),
       );
     },
     [],
   );
 
   const onDelete = useCallback((id: string) => {
-    setNodesRef.current((nds) => nds.filter((n) => n.id !== id));
-    setEdgesRef.current((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+    setNodesRef.current((nds) => nds.filter((node) => node.id !== id));
+    setEdgesRef.current((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
   }, []);
 
   const addNode = useCallback(
     (type: "claude" | "shell") => {
       const id = newId();
+
       setNodes((nds) => {
         const lastNode = nds[nds.length - 1];
         const x = lastNode ? lastNode.position.x + 340 : 60;
@@ -94,13 +96,16 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
         return [...nds, newNode];
       });
     },
-    [setNodes, onUpdate, onDelete],
+    [onDelete, onUpdate, setNodes],
   );
 
   const onConnect = useCallback(
-    (conn: Connection) =>
+    (connection: Connection) =>
       setEdges((eds) =>
-        addEdge({ ...conn, animated: true, style: { stroke: "#334155", strokeWidth: 2 } }, eds),
+        addEdge(
+          { ...connection, animated: true, style: { stroke: "#334155", strokeWidth: 2 } },
+          eds,
+        ),
       ),
     [setEdges],
   );
@@ -110,7 +115,9 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
 
   const runWorkflow = useCallback(async () => {
     const currentNodes = nodesRef.current;
-    if (running || currentNodes.length === 0) return;
+    if (running || currentNodes.length === 0) {
+      return;
+    }
 
     setRunning(true);
     onRunningChange(true);
@@ -119,8 +126,9 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
     const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
     const definition = {
       name: "Canvas Workflow",
-      workflow: sorted.map((n) => {
-        const d = n.data as StepNodeData;
+      workflow: sorted.map((node) => {
+        const d = node.data as StepNodeData;
+
         if (d.type === "claude") {
           return {
             name: d.title || "Claude Step",
@@ -129,7 +137,11 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
             skip_permission: true,
           };
         }
-        return { name: d.title || "Shell Step", run: d.prompt || "" };
+
+        return {
+          name: d.title || "Shell Step",
+          run: d.prompt || "",
+        };
       }),
     };
 
@@ -140,21 +152,29 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
         body: JSON.stringify({ definition }),
       });
 
-      if (!res.body) return;
+      if (!res.body) {
+        return;
+      }
 
       const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
+      const decoder = new TextDecoder();
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const parts = buf.split("\n");
-        buf = parts.pop() ?? "";
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n");
+        buffer = parts.pop() ?? "";
 
         for (const part of parts) {
-          if (!part.trim()) continue;
+          if (!part.trim()) {
+            continue;
+          }
+
           try {
             const parsed = JSON.parse(part) as Record<string, unknown>;
             let line: LogLine;
@@ -169,8 +189,8 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
             } else {
               const entry = parsed as unknown as LogEntry;
               const prefix = entry.step ? `[${entry.step}] ` : "";
-              const tp = entry.level === "tool_use" ? "⚙ " : "";
-              line = { text: `${prefix}${tp}${entry.message}`, level: entry.level };
+              const toolPrefix = entry.level === "tool_use" ? "⚙ " : "";
+              line = { text: `${prefix}${toolPrefix}${entry.message}`, level: entry.level };
             }
 
             onLinesChange((prev) => [...prev, line]);
@@ -179,73 +199,46 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
           }
         }
       }
-    } catch (err) {
+    } catch (error) {
       onLinesChange((prev) => [
         ...prev,
-        { text: `[ERROR] ${(err as Error).message}`, level: "error" },
+        { text: `[ERROR] ${(error as Error).message}`, level: "error" },
       ]);
     } finally {
       setRunning(false);
       onRunningChange(false);
     }
-  }, [running, onLinesChange, onRunningChange]);
+  }, [onLinesChange, onRunningChange, running]);
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative" }}>
-      {/* Toolbar */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 10,
-          display: "flex",
-          gap: 8,
-          background: "rgba(9, 9, 11, 0.9)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid #1e293b",
-          borderRadius: 10,
-          padding: "8px 12px",
-          boxShadow: "0 4px 24px #00000088",
-        }}
-      >
+    <div className="relative h-full w-full">
+      <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/85 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur">
         <ToolbarButton
           onClick={() => addNode("claude")}
-          bg="#1d4ed8"
-          hoverBg="#2563eb"
           disabled={running}
+          className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500"
         >
           + Claude Agent
         </ToolbarButton>
+
         <ToolbarButton
           onClick={() => addNode("shell")}
-          bg="#15803d"
-          hoverBg="#16a34a"
           disabled={running}
+          className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500"
         >
           + Shell Step
         </ToolbarButton>
-        <div style={{ width: 1, background: "#1e293b", margin: "0 4px" }} />
+
+        <div className="mx-1 h-6 w-px bg-slate-700" />
+
         <ToolbarButton
           onClick={runWorkflow}
-          bg="#b45309"
-          hoverBg="#d97706"
           disabled={running || nodes.length === 0}
+          className="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500"
         >
           {running ? (
             <>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#fbbf24",
-                  marginRight: 6,
-                  animation: "pulse 1s infinite",
-                }}
-              />
+              <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-amber-200" />
               Running...
             </>
           ) : (
@@ -254,21 +247,8 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
         </ToolbarButton>
       </div>
 
-      {/* Empty state hint */}
       {nodes.length === 0 && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            gap: 12,
-            color: "#1e293b",
-            pointerEvents: "none",
-          }}
-        >
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-700">
           <svg
             width="64"
             height="64"
@@ -280,7 +260,7 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4l3 3" />
           </svg>
-          <div style={{ fontSize: 15, letterSpacing: 0.3 }}>
+          <div className="text-sm tracking-wide">
             Add a step above to start building your workflow
           </div>
         </div>
@@ -304,67 +284,35 @@ export function WorkflowCanvas({ onLinesChange, onRunningChange }: WorkflowCanva
       >
         <Background color="#0f172a" variant={BackgroundVariant.Dots} gap={28} size={1.5} />
         <Controls
+          showInteractive={false}
           style={{
             background: "#0f172a",
             border: "1px solid #1e293b",
             borderRadius: 8,
           }}
-          showInteractive={false}
         />
       </ReactFlow>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-        .react-flow__controls-button {
-          background: #0f172a !important;
-          border-color: #1e293b !important;
-          color: #94a3b8 !important;
-          fill: #94a3b8 !important;
-        }
-        .react-flow__controls-button:hover {
-          background: #1e293b !important;
-        }
-      `}</style>
     </div>
   );
 }
 
 function ToolbarButton({
   onClick,
-  bg,
-  hoverBg,
-  disabled = false,
+  disabled,
+  className,
   children,
 }: {
   onClick: () => void;
-  bg: string;
-  hoverBg: string;
-  disabled?: boolean;
-  children: React.ReactNode;
+  disabled: boolean;
+  className: string;
+  children: ReactNode;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: disabled ? "#111827" : hovered ? hoverBg : bg,
-        color: disabled ? "#4b5563" : "#fff",
-        border: "none",
-        padding: "6px 14px",
-        borderRadius: 6,
-        cursor: disabled ? "not-allowed" : "pointer",
-        fontSize: 12,
-        fontWeight: 500,
-        display: "flex",
-        alignItems: "center",
-        transition: "background 0.15s",
-      }}
+      className={`inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold text-white transition disabled:cursor-not-allowed ${className}`}
     >
       {children}
     </button>

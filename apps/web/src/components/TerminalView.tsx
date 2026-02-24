@@ -29,7 +29,10 @@ export function TerminalView({ filePath }: TerminalViewProps) {
   }, [lines]);
 
   const runWorkflow = async () => {
-    if (!filePath || running) return;
+    if (!filePath || running) {
+      return;
+    }
+
     setLines([]);
     setRunning(true);
 
@@ -50,12 +53,19 @@ export function TerminalView({ filePath }: TerminalViewProps) {
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        break;
+      }
+
       buffer += decoder.decode(value, { stream: true });
       const parts = buffer.split("\n");
       buffer = parts.pop() ?? "";
+
       for (const part of parts) {
-        if (!part.trim()) continue;
+        if (!part.trim()) {
+          continue;
+        }
+
         try {
           const parsed = JSON.parse(part) as StreamLine;
           if ("type" in parsed && parsed.type === "done") {
@@ -85,72 +95,46 @@ export function TerminalView({ filePath }: TerminalViewProps) {
         }
       }
     }
+
     setRunning(false);
   };
 
   return (
-    <main style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, minWidth: 0 }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+    <main className="flex min-w-0 flex-1 flex-col p-4">
+      <div className="mb-3 flex items-center gap-2">
         <span
-          style={{
-            fontSize: 12,
-            color: filePath ? "#60a5fa" : "#444",
-            flex: 1,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
+          className={`flex-1 truncate text-xs ${filePath ? "text-cyan-300" : "text-slate-600"}`}
         >
           {filePath ?? "← Select a workflow from the sidebar"}
         </span>
+
         <button
+          type="button"
           onClick={runWorkflow}
           disabled={running || !filePath}
-          style={{
-            background: running ? "#1a1a1a" : filePath ? "#1d4ed8" : "#222",
-            color: filePath ? "#fff" : "#555",
-            border: "1px solid #333",
-            padding: "6px 18px",
-            borderRadius: 4,
-            cursor: running || !filePath ? "not-allowed" : "pointer",
-            fontSize: 13,
-            flexShrink: 0,
-          }}
+          className="shrink-0 rounded-md border border-slate-700 px-4 py-1.5 text-xs text-white transition enabled:bg-cyan-600 enabled:hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-900 disabled:text-slate-500"
         >
           {running ? "Running..." : "▶ Run"}
         </button>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          background: "#0a0a0a",
-          border: "1px solid #1e1e1e",
-          borderRadius: 4,
-          padding: "12px 16px",
-          overflowY: "auto",
-          fontFamily: "monospace",
-          fontSize: 12,
-          lineHeight: 1.7,
-        }}
-      >
+      <div className="flex-1 overflow-y-auto rounded-md border border-slate-800 bg-slate-950 p-3 font-mono text-xs leading-relaxed">
         {lines.length === 0 && (
-          <span style={{ color: "#333" }}>Output will appear here after you click Run.</span>
+          <span className="text-slate-600">Output will appear here after you click Run.</span>
         )}
-        {lines.map((line, i) => (
+
+        {lines.map((line, index) => (
           <div
-            key={i}
-            style={{
-              whiteSpace: "pre-wrap",
-              color:
-                line.level === "error" || line.level === "stderr"
-                  ? "#f87171"
-                  : line.level === "tool_use"
-                    ? "#fbbf24"
-                    : line.level === "tool_result"
-                      ? "#67e8f9"
-                      : "#86efac",
-            }}
+            key={`${line.level}-${index}`}
+            className={`whitespace-pre-wrap ${
+              line.level === "error" || line.level === "stderr"
+                ? "text-rose-400"
+                : line.level === "tool_use"
+                  ? "text-amber-300"
+                  : line.level === "tool_result"
+                    ? "text-cyan-300"
+                    : "text-emerald-300"
+            }`}
           >
             {line.text}
           </div>

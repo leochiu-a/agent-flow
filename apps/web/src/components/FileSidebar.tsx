@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface FileSidebarProps {
   onSelectFile?: (filename: string, filePath: string) => void;
@@ -18,7 +18,6 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Create modal state
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newContent, setNewContent] = useState(DEFAULT_YAML);
@@ -43,13 +42,12 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
     setSelected(filename);
     setFileContent(null);
     setLoading(true);
+
     try {
       const res = await fetch(`/api/workflow/read?file=${encodeURIComponent(filename)}`);
-      const data = (await res.json()) as { content?: string; error?: string };
+      const data = (await res.json()) as { content?: string };
       setFileContent(data.content ?? null);
-      if (onSelectFile) {
-        onSelectFile(filename, `${dir}/${filename}`);
-      }
+      onSelectFile?.(filename, `${dir}/${filename}`);
     } catch {
       setFileContent(null);
     } finally {
@@ -62,254 +60,140 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
       setCreateError("請輸入檔案名稱");
       return;
     }
+
     setCreating(true);
     setCreateError(null);
+
     try {
       const res = await fetch("/api/workflow/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName.trim(), content: newContent }),
       });
+
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
         setCreateError(data.error ?? "建立失敗");
         return;
       }
+
       setShowCreate(false);
       setNewName("");
       setNewContent(DEFAULT_YAML);
       await fetchFiles();
-    } catch (e) {
-      setCreateError((e as Error).message);
+    } catch (error) {
+      setCreateError((error as Error).message);
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <div
-      style={{
-        width: 220,
-        flexShrink: 0,
-        borderRight: "1px solid #0f172a",
-        background: "#020617",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* Sidebar header */}
-      <div
-        style={{
-          padding: "10px 12px",
-          borderBottom: "1px solid #0f172a",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <span
-          style={{ fontSize: 11, color: "#475569", fontWeight: 600, flex: 1, letterSpacing: 0.5 }}
-        >
-          AI WORKFLOWS
+    <aside className="flex w-64 shrink-0 flex-col overflow-hidden border-r border-slate-800/80 bg-slate-950/70">
+      <div className="flex items-center gap-2 border-b border-slate-800/80 px-3 py-2.5">
+        <span className="flex-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          AI Workflows
         </span>
+
         <button
+          type="button"
           onClick={() => {
             setShowCreate(true);
             setCreateError(null);
           }}
           title="新增 Workflow"
-          style={{
-            background: "transparent",
-            border: "1px solid #1e293b",
-            color: "#60a5fa",
-            width: 22,
-            height: 22,
-            borderRadius: 4,
-            cursor: "pointer",
-            fontSize: 14,
-            lineHeight: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-          }}
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-700 text-sm leading-none text-cyan-300 transition hover:border-cyan-400 hover:text-cyan-100"
         >
           +
         </button>
       </div>
 
-      {/* File list */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div className="flex-1 overflow-y-auto">
         {files.length === 0 ? (
-          <div style={{ padding: "16px 12px", fontSize: 11, color: "#334155", lineHeight: 1.6 }}>
+          <div className="px-3 py-4 text-[11px] leading-relaxed text-slate-500">
             尚無 workflow 檔案
             <br />點 + 建立第一個
           </div>
         ) : (
-          files.map((f) => (
+          files.map((filename) => (
             <button
-              key={f}
-              onClick={() => void selectFile(f, "")}
-              style={{
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                background: selected === f ? "#0f172a" : "transparent",
-                border: "none",
-                borderLeft: selected === f ? "2px solid #60a5fa" : "2px solid transparent",
-                color: selected === f ? "#e2e8f0" : "#64748b",
-                padding: "7px 12px",
-                fontSize: 12,
-                cursor: "pointer",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
+              key={filename}
+              type="button"
+              onClick={() => void selectFile(filename, "")}
+              className={`block w-full truncate border-l-2 px-3 py-2 text-left text-xs transition ${
+                selected === filename
+                  ? "border-cyan-400 bg-slate-900 text-slate-100"
+                  : "border-transparent text-slate-400 hover:bg-slate-900/60 hover:text-slate-200"
+              }`}
             >
-              {f}
+              {filename}
             </button>
           ))
         )}
       </div>
 
-      {/* File content preview */}
       {selected && (
-        <div
-          style={{
-            borderTop: "1px solid #0f172a",
-            padding: "10px 12px",
-            maxHeight: 220,
-            overflowY: "auto",
-          }}
-        >
-          <div style={{ fontSize: 10, color: "#475569", marginBottom: 6, fontWeight: 600 }}>
-            {selected}
-          </div>
+        <div className="max-h-56 overflow-y-auto border-t border-slate-800/80 px-3 py-2.5">
+          <div className="mb-1.5 truncate text-[10px] font-semibold text-slate-500">{selected}</div>
           {loading ? (
-            <div style={{ fontSize: 11, color: "#334155" }}>載入中...</div>
+            <div className="text-[11px] text-slate-500">載入中...</div>
           ) : (
-            <pre
-              style={{
-                margin: 0,
-                fontSize: 10,
-                color: "#64748b",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-                lineHeight: 1.6,
-              }}
-            >
+            <pre className="m-0 whitespace-pre-wrap break-all text-[10px] leading-relaxed text-slate-400">
               {fileContent ?? "（無法讀取）"}
             </pre>
           )}
         </div>
       )}
 
-      {/* Create modal overlay */}
       {showCreate && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowCreate(false);
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowCreate(false);
+            }
           }}
         >
-          <div
-            style={{
-              background: "#0f172a",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 24,
-              width: 480,
-              maxWidth: "90vw",
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>
-              建立新的 Workflow 檔案
-            </div>
+          <div className="flex w-full max-w-2xl flex-col gap-4 rounded-xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+            <div className="text-sm font-semibold text-slate-100">建立新的 Workflow 檔案</div>
 
-            {/* Name input */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <label style={{ fontSize: 11, color: "#64748b" }}>檔案名稱</label>
+            <label className="flex flex-col gap-1 text-[11px] text-slate-400">
+              檔案名稱
               <input
                 autoFocus
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={(event) => setNewName(event.target.value)}
                 placeholder="my-workflow（自動加 .yaml）"
-                style={{
-                  background: "#020617",
-                  border: "1px solid #1e293b",
-                  borderRadius: 6,
-                  color: "#e2e8f0",
-                  padding: "6px 10px",
-                  fontSize: 12,
-                  outline: "none",
-                }}
+                className="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
               />
-            </div>
+            </label>
 
-            {/* Content editor */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <label style={{ fontSize: 11, color: "#64748b" }}>YAML 內容</label>
+            <label className="flex flex-col gap-1 text-[11px] text-slate-400">
+              YAML 內容
               <textarea
                 value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
+                onChange={(event) => setNewContent(event.target.value)}
                 rows={12}
-                style={{
-                  background: "#020617",
-                  border: "1px solid #1e293b",
-                  borderRadius: 6,
-                  color: "#86efac",
-                  padding: "8px 10px",
-                  fontSize: 11,
-                  fontFamily: "monospace",
-                  resize: "vertical",
-                  outline: "none",
-                  lineHeight: 1.7,
-                }}
+                className="resize-y rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-emerald-200 outline-none transition focus:border-emerald-400"
               />
-            </div>
+            </label>
 
-            {createError && <div style={{ fontSize: 11, color: "#f87171" }}>{createError}</div>}
+            {createError && <div className="text-[11px] text-rose-400">{createError}</div>}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setShowCreate(false)}
-                style={{
-                  background: "transparent",
-                  border: "1px solid #334155",
-                  color: "#64748b",
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  fontSize: 12,
-                }}
+                className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 transition hover:border-slate-500 hover:text-slate-100"
               >
                 取消
               </button>
+
               <button
+                type="button"
                 onClick={() => void createFile()}
                 disabled={creating}
-                style={{
-                  background: creating ? "#1e3a5f" : "#1d4ed8",
-                  color: "#fff",
-                  border: "none",
-                  padding: "6px 16px",
-                  borderRadius: 6,
-                  cursor: creating ? "not-allowed" : "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
+                className="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
               >
                 {creating ? "建立中..." : "建立"}
               </button>
@@ -317,6 +201,6 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
           </div>
         </div>
       )}
-    </div>
+    </aside>
   );
 }

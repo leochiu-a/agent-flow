@@ -15,126 +15,78 @@ export function StepNode({ id, data, selected }: NodeProps) {
   const d = data as StepNodeData;
   const isAgent = d.type === "claude";
 
-  const borderColor = selected ? "#60a5fa" : isAgent ? "#2563eb" : "#16a34a";
-  const accentColor = isAgent ? "#93c5fd" : "#86efac";
-  const bgColor = isAgent ? "#0a1628" : "#0a180a";
+  const tone = isAgent
+    ? {
+        card: "bg-blue-950/50 border-blue-500/60",
+        focus:
+          "border-cyan-300 shadow-[0_0_0_1px_rgba(103,232,249,0.9),0_0_24px_rgba(56,189,248,0.25)]",
+        select: "border-cyan-400/70 text-cyan-200",
+        textarea: "focus:border-cyan-400 text-slate-300",
+      }
+    : {
+        card: "bg-emerald-950/30 border-emerald-500/60",
+        focus:
+          "border-emerald-300 shadow-[0_0_0_1px_rgba(110,231,183,0.9),0_0_24px_rgba(16,185,129,0.2)]",
+        select: "border-emerald-400/70 text-emerald-200",
+        textarea: "focus:border-emerald-400 text-slate-300",
+      };
 
   return (
     <div
-      style={{
-        background: bgColor,
-        border: `2px solid ${borderColor}`,
-        borderRadius: 10,
-        padding: "12px 14px",
-        width: 280,
-        boxShadow: selected ? `0 0 12px ${borderColor}44` : "0 2px 8px #00000066",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-      }}
+      className={`w-[280px] rounded-xl border-2 p-3.5 transition ${tone.card} ${selected ? tone.focus : "shadow-lg shadow-black/40"}`}
     >
       <Handle
         type="target"
         position={Position.Left}
         style={{
-          background: "#374151",
-          border: "2px solid #4b5563",
+          background: "#1e293b",
+          border: "2px solid #475569",
           width: 12,
           height: 12,
         }}
       />
 
-      {/* Header: type selector + delete */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+      <div className="mb-2.5 flex items-center gap-2">
         <select
           value={d.type}
-          onChange={(e) => d.onUpdate(id, { type: e.target.value as "claude" | "shell" })}
-          className="nodrag"
-          style={{
-            flex: 1,
-            background: "#111",
-            border: `1px solid ${accentColor}33`,
-            color: accentColor,
-            fontSize: 11,
-            padding: "3px 6px",
-            borderRadius: 4,
-            cursor: "pointer",
-            outline: "none",
-          }}
+          onChange={(event) => d.onUpdate(id, { type: event.target.value as "claude" | "shell" })}
+          className={`nodrag flex-1 rounded border bg-slate-950/70 px-2 py-1 text-[11px] outline-none transition ${tone.select}`}
         >
           <option value="claude">⚙ Claude Agent</option>
           <option value="shell">$ Shell Command</option>
         </select>
+
         <button
+          type="button"
           onClick={() => d.onDelete(id)}
-          className="nodrag"
+          className="nodrag rounded px-1 text-base leading-none text-slate-500 transition hover:text-rose-400"
           title="Delete step"
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "#4b5563",
-            cursor: "pointer",
-            fontSize: 15,
-            padding: "0 2px",
-            lineHeight: 1,
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#f87171")}
-          onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#4b5563")}
         >
           ✕
         </button>
       </div>
 
-      {/* Title input */}
       <input
         value={d.title}
-        onChange={(e) => d.onUpdate(id, { title: e.target.value })}
+        onChange={(event) => d.onUpdate(id, { title: event.target.value })}
         placeholder="Step title..."
-        className="nodrag"
-        style={{
-          width: "100%",
-          background: "transparent",
-          border: "none",
-          borderBottom: "1px solid #1e293b",
-          color: "#e2e8f0",
-          fontSize: 13,
-          fontWeight: 600,
-          marginBottom: 10,
-          outline: "none",
-          padding: "4px 0",
-          boxSizing: "border-box",
-          fontFamily: "inherit",
-        }}
+        className="nodrag mb-2.5 w-full border-0 border-b border-slate-700 bg-transparent px-0 py-1 text-sm font-semibold text-slate-100 outline-none placeholder:text-slate-500 focus:border-slate-500"
       />
 
-      {/* Prompt / command textarea */}
       <textarea
         value={d.prompt}
-        onChange={(e) => d.onUpdate(id, { prompt: e.target.value })}
+        onChange={(event) => d.onUpdate(id, { prompt: event.target.value })}
         placeholder={isAgent ? "Enter prompt for Claude..." : "Enter shell command..."}
-        className="nodrag nopan"
+        className={`nodrag nopan w-full resize-y rounded-md border bg-slate-950/80 p-2 font-mono text-[11px] leading-relaxed outline-none transition ${tone.textarea}`}
         rows={4}
-        style={{
-          width: "100%",
-          background: "#050505",
-          border: "1px solid #1e293b",
-          color: "#94a3b8",
-          fontSize: 11,
-          resize: "vertical",
-          padding: "8px",
-          borderRadius: 6,
-          fontFamily: "monospace",
-          outline: "none",
-          boxSizing: "border-box",
-          lineHeight: 1.6,
-        }}
       />
 
       <Handle
         type="source"
         position={Position.Right}
         style={{
-          background: "#374151",
-          border: "2px solid #4b5563",
+          background: "#1e293b",
+          border: "2px solid #475569",
           width: 12,
           height: 12,
         }}
