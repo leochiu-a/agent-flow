@@ -8,7 +8,7 @@ import type {
   LogEntry,
   WorkflowResult,
   StepResult,
-} from "./types.js";
+} from "./types";
 
 export class WorkflowRunner extends EventEmitter {
   private aborted = false;

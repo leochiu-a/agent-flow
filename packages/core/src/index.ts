@@ -1,4 +1,4 @@
-export { WorkflowRunner } from "./WorkflowRunner.js";
+export { WorkflowRunner } from "./WorkflowRunner";
 export type {
   WorkflowDefinition,
   WorkflowStep,
@@ -6,4 +6,4 @@ export type {
   LogLevel,
   WorkflowResult,
   StepResult,
-} from "./types.js";
+} from "./types";

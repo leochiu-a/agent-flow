@@ -19,15 +19,12 @@ agent-flow/
 ```bash
 pnpm install
 
-# Build all packages
-pnpm build
-
-# Start the web console
+# Start the web console (no build needed)
 pnpm dev
 
-# Run a workflow from the CLI
+# Build CLI, then run a workflow
 pnpm --filter @agent-flow/cli build
-node packages/cli/dist/index.js run .ai-workflows/test-workflow.yaml
+pnpm exec agent-flow run .ai-workflows/test-workflow.yaml
 ```
 
 ## Workflow YAML Format
@@ -41,7 +38,7 @@ workflow:
   - name: "Claude AI step"
     agent: claude
     prompt: "Summarise the last git commit in one sentence"
-    skip_permission: true   # passes --yes to claude CLI
+    skip_permission: true   # passes --dangerously-skip-permissions to claude CLI
 ```
 
 ## Packages
