@@ -93,7 +93,7 @@ export function WorkflowCanvas({
       source: node.id,
       target: newNodes[i + 1].id,
       animated: true,
-      style: { stroke: "#334155", strokeWidth: 2 },
+      style: { stroke: "#EA4B71", strokeWidth: 2 },
     }));
 
     setNodes(newNodes);
@@ -130,7 +130,7 @@ export function WorkflowCanvas({
               source: lastNode.id,
               target: id,
               animated: true,
-              style: { stroke: "#334155", strokeWidth: 2 },
+              style: { stroke: "#EA4B71", strokeWidth: 2 },
             },
           ]);
         }
@@ -145,7 +145,7 @@ export function WorkflowCanvas({
     (connection: Connection) =>
       setEdges((eds) =>
         addEdge(
-          { ...connection, animated: true, style: { stroke: "#334155", strokeWidth: 2 } },
+          { ...connection, animated: true, style: { stroke: "#EA4B71", strokeWidth: 2 } },
           eds,
         ),
       ),
@@ -295,11 +295,11 @@ export function WorkflowCanvas({
 
   return (
     <div className="relative h-full w-full">
-      <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/85 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur">
+      <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
         <ToolbarButton
           onClick={() => addNode("claude")}
           disabled={running}
-          className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500"
+          className="bg-pink hover:bg-pink/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
         >
           + Claude Agent
         </ToolbarButton>
@@ -307,21 +307,21 @@ export function WorkflowCanvas({
         <ToolbarButton
           onClick={() => addNode("shell")}
           disabled={running}
-          className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500"
+          className="bg-orange hover:bg-orange/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
         >
           + Shell Step
         </ToolbarButton>
 
-        <div className="mx-1 h-6 w-px bg-slate-700" />
+        <div className="mx-1 h-6 w-px bg-[#E5E7EB]" />
 
         <ToolbarButton
           onClick={runWorkflow}
           disabled={running || nodes.length === 0}
-          className="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500"
+          className="bg-pink hover:bg-pink/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
         >
           {running ? (
             <>
-              <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-amber-200" />
+              <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-white/80" />
               Running...
             </>
           ) : (
@@ -331,16 +331,16 @@ export function WorkflowCanvas({
 
         {selectedFile && (
           <>
-            <div className="mx-1 h-6 w-px bg-slate-700" />
+            <div className="mx-1 h-6 w-px bg-[#E5E7EB]" />
             <ToolbarButton
               onClick={() => void saveWorkflow()}
               disabled={saveStatus === "saving" || nodes.length === 0}
               className={
                 saveStatus === "saved"
-                  ? "bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 disabled:text-slate-500"
+                  ? "bg-orange hover:bg-orange/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
                   : saveStatus === "error"
-                    ? "bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500"
-                    : "bg-slate-600 hover:bg-slate-500 disabled:bg-slate-800 disabled:text-slate-500"
+                    ? "bg-pink hover:bg-pink/90 disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
+                    : "bg-[#1F2937] hover:bg-[#374151] disabled:bg-[#F3F4F6] disabled:text-[#9CA3AF]"
               }
             >
               {saveStatus === "saving"
@@ -356,7 +356,7 @@ export function WorkflowCanvas({
       </div>
 
       {nodes.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-700">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#D1D5DB]">
           <svg
             width="64"
             height="64"
@@ -384,18 +384,18 @@ export function WorkflowCanvas({
         fitView
         fitViewOptions={{ padding: 0.4, maxZoom: 1 }}
         minZoom={0.3}
-        style={{ background: "#020617" }}
+        style={{ background: "#F8F9FA" }}
         defaultEdgeOptions={{
           animated: true,
-          style: { stroke: "#334155", strokeWidth: 2 },
+          style: { stroke: "#EA4B71", strokeWidth: 2 },
         }}
       >
-        <Background color="#0f172a" variant={BackgroundVariant.Dots} gap={28} size={1.5} />
+        <Background color="#E5E7EB" variant={BackgroundVariant.Dots} gap={28} size={1.5} />
         <Controls
           showInteractive={false}
           style={{
-            background: "#0f172a",
-            border: "1px solid #1e293b",
+            background: "#FFFFFF",
+            border: "1px solid #E5E7EB",
             borderRadius: 8,
           }}
         />

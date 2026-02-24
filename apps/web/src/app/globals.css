@@ -1,10 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-pink: #EA4B71;
+  --color-navy: #101330;
+  --color-dark: #1F2937;
+  --color-orange: #EA320D;
+  --color-light: #FCFCFD;
+  --color-canvas: #F8F9FA;
+}
+
 :root {
-  --bg: #020617;
-  --panel: #0f172a;
-  --muted: #334155;
-  --text: #e2e8f0;
+  --bg: #F8F9FA;
+  --panel: #FFFFFF;
+  --muted: #6B7280;
+  --text: #1F2937;
 }
 
 html,
@@ -14,7 +23,7 @@ body {
 
 body {
   margin: 0;
-  background: radial-gradient(circle at 20% -10%, #172554 0%, #020617 45%, #01030a 100%);
+  background: #F8F9FA;
   color: var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -25,12 +34,12 @@ body {
 }
 
 .react-flow__controls-button {
-  background: #0f172a !important;
-  border-color: #1e293b !important;
-  color: #94a3b8 !important;
-  fill: #94a3b8 !important;
+  background: #FFFFFF !important;
+  border-color: #E5E7EB !important;
+  color: #6B7280 !important;
+  fill: #6B7280 !important;
 }
 
 .react-flow__controls-button:hover {
-  background: #1e293b !important;
+  background: #F3F4F6 !important;
 }
