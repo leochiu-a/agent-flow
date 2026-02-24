@@ -191,7 +191,7 @@ export function WorkflowCanvas({
       const res = await fetch("/api/workflow/run-definition", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ definition }),
+        body: JSON.stringify({ definition, workflowFile: selectedFile ?? undefined }),
       });
 
       if (!res.body) {

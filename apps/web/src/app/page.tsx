@@ -17,6 +17,7 @@ export default function Home() {
   const [savedContent, setSavedContent] = useState<{ filename: string; content: string } | null>(
     null,
   );
+  const [sessionRefreshKey, setSessionRefreshKey] = useState(0);
 
   const handleSelectFile = (filename: string, content: string) => {
     setSelectedFile(filename);
@@ -28,10 +29,18 @@ export default function Home() {
     }
   };
 
+  const handleSelectSession = (logLines: LogLine[], _success: boolean) => {
+    setLines(logLines);
+    setShowTerminal(true);
+  };
+
   const handleRunningChange = (nextRunning: boolean) => {
     setRunning(nextRunning);
     if (nextRunning) {
       setShowTerminal(true);
+    } else {
+      // Run completed — refresh sidebar sessions
+      setSessionRefreshKey((k) => k + 1);
     }
   };
 
@@ -57,7 +66,13 @@ export default function Home() {
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <FileSidebar onSelectFile={handleSelectFile} savedContent={savedContent} />
+        <FileSidebar
+          onSelectFile={handleSelectFile}
+          onSelectSession={handleSelectSession}
+          savedContent={savedContent}
+          refreshKey={sessionRefreshKey}
+          runningFile={running ? selectedFile : null}
+        />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div
