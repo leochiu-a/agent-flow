@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 interface FileSidebarProps {
   onSelectFile?: (filename: string, content: string) => void;
+  savedContent?: { filename: string; content: string } | null;
 }
 
 const DEFAULT_YAML = `name: "New Workflow"
@@ -12,7 +13,7 @@ workflow:
     run: "echo 'Hello from Agent Flow!'"
 `;
 
-export function FileSidebar({ onSelectFile }: FileSidebarProps) {
+export function FileSidebar({ onSelectFile, savedContent }: FileSidebarProps) {
   const [files, setFiles] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
@@ -37,6 +38,12 @@ export function FileSidebar({ onSelectFile }: FileSidebarProps) {
   useEffect(() => {
     void fetchFiles();
   }, [fetchFiles]);
+
+  useEffect(() => {
+    if (savedContent && savedContent.filename === selected) {
+      setFileContent(savedContent.content);
+    }
+  }, [savedContent, selected]);
 
   const selectFile = async (filename: string) => {
     setSelected(filename);

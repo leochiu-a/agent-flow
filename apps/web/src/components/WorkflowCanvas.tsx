@@ -14,6 +14,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { dump as yamlDump } from "js-yaml";
 import type { LogEntry, WorkflowDefinition } from "@agent-flow/core";
 import { StepNode } from "./StepNode";
 import type { StepNodeData } from "./StepNode";
@@ -27,6 +28,8 @@ interface WorkflowCanvasProps {
   onLinesChange: (updater: (prev: LogLine[]) => LogLine[]) => void;
   onRunningChange: (running: boolean) => void;
   workflowDefinition?: WorkflowDefinition | null;
+  selectedFile?: string | null;
+  onSave?: (filename: string, content: string) => void;
 }
 
 const nodeTypes = { step: StepNode };
@@ -37,10 +40,13 @@ export function WorkflowCanvas({
   onLinesChange,
   onRunningChange,
   workflowDefinition,
+  selectedFile,
+  onSave,
 }: WorkflowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [running, setRunning] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const setNodesRef = useRef(setNodes);
   setNodesRef.current = setNodes;
@@ -246,6 +252,47 @@ export function WorkflowCanvas({
     }
   }, [onLinesChange, onRunningChange, running]);
 
+  const saveWorkflow = useCallback(async () => {
+    if (!selectedFile || saveStatus === "saving") return;
+
+    const currentNodes = nodesRef.current;
+    const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
+    const definition: WorkflowDefinition = {
+      name: selectedFile.replace(/\.ya?ml$/, ""),
+      workflow: sorted.map((node) => {
+        const d = node.data as StepNodeData;
+        if (d.type === "claude") {
+          return {
+            name: d.title || "Claude Step",
+            agent: "claude",
+            prompt: d.prompt || "",
+            skip_permission: true,
+          };
+        }
+        return { name: d.title || "Shell Step", run: d.prompt || "" };
+      }),
+    };
+
+    setSaveStatus("saving");
+    try {
+      const res = await fetch("/api/workflow/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: selectedFile, content: yamlDump(definition) }),
+      });
+      if (res.ok) {
+        setSaveStatus("saved");
+        onSave?.(selectedFile, yamlDump(definition));
+      } else {
+        setSaveStatus("error");
+      }
+    } catch {
+      setSaveStatus("error");
+    } finally {
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    }
+  }, [selectedFile, saveStatus]);
+
   return (
     <div className="relative h-full w-full">
       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/85 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur">
@@ -281,6 +328,31 @@ export function WorkflowCanvas({
             "▶ Run"
           )}
         </ToolbarButton>
+
+        {selectedFile && (
+          <>
+            <div className="mx-1 h-6 w-px bg-slate-700" />
+            <ToolbarButton
+              onClick={() => void saveWorkflow()}
+              disabled={saveStatus === "saving" || nodes.length === 0}
+              className={
+                saveStatus === "saved"
+                  ? "bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 disabled:text-slate-500"
+                  : saveStatus === "error"
+                    ? "bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500"
+                    : "bg-slate-600 hover:bg-slate-500 disabled:bg-slate-800 disabled:text-slate-500"
+              }
+            >
+              {saveStatus === "saving"
+                ? "Saving..."
+                : saveStatus === "saved"
+                  ? "✓ Saved"
+                  : saveStatus === "error"
+                    ? "✗ Error"
+                    : "Save"}
+            </ToolbarButton>
+          </>
+        )}
       </div>
 
       {nodes.length === 0 && (

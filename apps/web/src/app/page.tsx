@@ -13,8 +13,13 @@ export default function Home() {
   const [running, setRunning] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
   const [workflowDefinition, setWorkflowDefinition] = useState<WorkflowDefinition | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [savedContent, setSavedContent] = useState<{ filename: string; content: string } | null>(
+    null,
+  );
 
-  const handleSelectFile = (_filename: string, content: string) => {
+  const handleSelectFile = (filename: string, content: string) => {
+    setSelectedFile(filename);
     try {
       const parsed = yamlLoad(content) as WorkflowDefinition;
       setWorkflowDefinition(parsed);
@@ -52,7 +57,7 @@ export default function Home() {
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <FileSidebar onSelectFile={handleSelectFile} />
+        <FileSidebar onSelectFile={handleSelectFile} savedContent={savedContent} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div
@@ -62,6 +67,8 @@ export default function Home() {
               onLinesChange={setLines}
               onRunningChange={handleRunningChange}
               workflowDefinition={workflowDefinition}
+              selectedFile={selectedFile}
+              onSave={(filename, content) => setSavedContent({ filename, content })}
             />
           </div>
 

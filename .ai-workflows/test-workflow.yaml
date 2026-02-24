@@ -1,8 +1,12 @@
-name: "Test Workflow"
+name: test-workflow
 workflow:
-  - name: "List project structure"
-    run: "find . -name '*.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' | head -20"
-  - name: "Analyze code"
+  - name: List project structure
+    run: >-
+      find . -name '*.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' |
+      head -20
+  - name: Analyze code
     agent: claude
-    prompt: "Read the file packages/core/src/WorkflowRunner.ts and explain its architecture and main responsibilities."
+    prompt: >-
+      Read the file packages/core/src/WorkflowRunner.ts and explain its
+      architecture and main responsibilities.
     skip_permission: true
