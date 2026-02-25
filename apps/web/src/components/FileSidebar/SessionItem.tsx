@@ -46,7 +46,7 @@ export function SessionItem({
         title="Delete session"
         disabled={isDeleting}
         onClick={onDelete}
-        className="shrink-0 opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+        className="shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Trash2 size={12} />
       </button>
