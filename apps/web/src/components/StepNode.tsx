@@ -6,7 +6,7 @@ export interface StepNodeData {
   title: string;
   type: "claude" | "shell";
   prompt: string;
-  onUpdate: (id: string, updates: Partial<Pick<StepNodeData, "title" | "type" | "prompt">>) => void;
+  onRequestEdit: (id: string) => void;
   onDelete: (id: string) => void;
   [key: string]: unknown;
 }
@@ -19,15 +19,18 @@ export function StepNode({ id, data, selected }: NodeProps) {
     ? {
         card: "bg-white border-pink/40",
         focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
-        select: "border-pink/50 text-pink",
-        textarea: "focus:border-pink text-ink",
+        badge: "bg-pink/10 text-pink border border-pink/30",
+        editHover: "hover:text-pink",
       }
     : {
         card: "bg-white border-orange/40",
         focus: "border-orange shadow-[0_0_0_1px_rgba(234,50,13,0.6),0_0_24px_rgba(234,50,13,0.12)]",
-        select: "border-orange/50 text-orange",
-        textarea: "focus:border-orange text-ink",
+        badge: "bg-orange/10 text-orange border border-orange/30",
+        editHover: "hover:text-orange",
       };
+
+  const rawPreview = d.prompt.replace(/\n/g, " ").trim();
+  const preview = rawPreview.length > 80 ? `${rawPreview.slice(0, 80)}…` : rawPreview;
 
   return (
     <div
@@ -44,40 +47,47 @@ export function StepNode({ id, data, selected }: NodeProps) {
         }}
       />
 
+      {/* Header: type badge + action buttons */}
       <div className="mb-2.5 flex items-center gap-2">
-        <select
-          value={d.type}
-          onChange={(event) => d.onUpdate(id, { type: event.target.value as "claude" | "shell" })}
-          className={`nodrag flex-1 rounded border bg-surface px-2 py-1 text-[11px] outline-none transition ${tone.select}`}
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
         >
-          <option value="claude">⚙ Claude Agent</option>
-          <option value="shell">$ Shell Command</option>
-        </select>
+          {isAgent ? "⚙ Claude" : "$ Shell"}
+        </span>
 
-        <button
-          type="button"
-          onClick={() => d.onDelete(id)}
-          className="nodrag rounded px-1 text-base leading-none text-muted-fg transition hover:text-pink"
-          title="Delete step"
-        >
-          ✕
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => d.onRequestEdit(id)}
+            className={`nodrag rounded px-1 text-sm leading-none text-muted-fg transition ${tone.editHover}`}
+            title="Edit step"
+          >
+            ✎
+          </button>
+          <button
+            type="button"
+            onClick={() => d.onDelete(id)}
+            className="nodrag rounded px-1 text-base leading-none text-muted-fg transition hover:text-pink"
+            title="Delete step"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
-      <input
-        value={d.title}
-        onChange={(event) => d.onUpdate(id, { title: event.target.value })}
-        placeholder="Step title..."
-        className="nodrag mb-2.5 w-full border-0 border-b border-border bg-transparent px-0 py-1 text-sm font-semibold text-dark outline-none placeholder:text-placeholder focus:border-muted-fg"
-      />
+      {/* Title */}
+      <div className="mb-1.5 truncate text-sm font-semibold text-dark">
+        {d.title || <span className="text-placeholder">Untitled step</span>}
+      </div>
 
-      <textarea
-        value={d.prompt}
-        onChange={(event) => d.onUpdate(id, { prompt: event.target.value })}
-        placeholder={isAgent ? "Enter prompt for Claude..." : "Enter shell command..."}
-        className={`nodrag nopan w-full resize-y rounded-md border border-border bg-surface p-2 font-mono text-[11px] leading-relaxed text-ink outline-none transition placeholder:text-muted-fg ${tone.textarea}`}
-        rows={4}
-      />
+      {/* Prompt / command preview */}
+      {preview ? (
+        <div className="font-mono text-[11px] leading-relaxed text-muted-fg">{preview}</div>
+      ) : (
+        <div className="font-mono text-[11px] italic text-placeholder">
+          {isAgent ? "No prompt yet — click ✎ to edit" : "No command yet — click ✎ to edit"}
+        </div>
+      )}
 
       <Handle
         type="source"

@@ -18,6 +18,7 @@ import { dump as yamlDump } from "js-yaml";
 import type { LogEntry, WorkflowDefinition } from "@agent-flow/core";
 import { StepNode } from "./StepNode";
 import type { StepNodeData } from "./StepNode";
+import { StepEditModal } from "./StepModals/StepEditModal";
 
 export interface LogLine {
   text: string;
@@ -48,25 +49,24 @@ export function WorkflowCanvas({
   const [running, setRunning] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [isModalSaving, setIsModalSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+
   const setNodesRef = useRef(setNodes);
   setNodesRef.current = setNodes;
   const setEdgesRef = useRef(setEdges);
   setEdgesRef.current = setEdges;
 
-  const onUpdate = useCallback(
-    (id: string, updates: Partial<Pick<StepNodeData, "title" | "type" | "prompt">>) => {
-      setNodesRef.current((nds) =>
-        nds.map((node) =>
-          node.id === id ? { ...node, data: { ...node.data, ...updates } } : node,
-        ),
-      );
-    },
-    [],
-  );
+  const onRequestEdit = useCallback((id: string) => {
+    setEditingStepId(id);
+    setModalError(null);
+  }, []);
 
   const onDelete = useCallback((id: string) => {
     setNodesRef.current((nds) => nds.filter((node) => node.id !== id));
     setEdgesRef.current((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+    setEditingStepId((current) => (current === id ? null : current));
   }, []);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function WorkflowCanvas({
           title: step.name,
           type: step.agent === "claude" ? "claude" : "shell",
           prompt: step.agent === "claude" ? (step.prompt ?? "") : (step.run ?? ""),
-          onUpdate,
+          onRequestEdit,
           onDelete,
         },
       };
@@ -98,7 +98,7 @@ export function WorkflowCanvas({
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [workflowDefinition, onUpdate, onDelete, setNodes, setEdges]);
+  }, [workflowDefinition, onRequestEdit, onDelete, setNodes, setEdges]);
 
   const addNode = useCallback(
     (type: "claude" | "shell") => {
@@ -117,7 +117,7 @@ export function WorkflowCanvas({
             title: type === "claude" ? "Claude Step" : "Shell Step",
             type,
             prompt: "",
-            onUpdate,
+            onRequestEdit,
             onDelete,
           },
         };
@@ -138,7 +138,7 @@ export function WorkflowCanvas({
         return [...nds, newNode];
       });
     },
-    [onDelete, onUpdate, setNodes],
+    [onDelete, onRequestEdit, setNodes],
   );
 
   const onConnect = useCallback(
@@ -252,46 +252,79 @@ export function WorkflowCanvas({
     }
   }, [onLinesChange, onRunningChange, running]);
 
-  const saveWorkflow = useCallback(async () => {
-    if (!selectedFile || saveStatus === "saving") return;
+  const handleModalSave = useCallback(
+    async (id: string, title: string, prompt: string) => {
+      if (isModalSaving) return;
 
-    const currentNodes = nodesRef.current;
-    const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
-    const definition: WorkflowDefinition = {
-      name: selectedFile.replace(/\.ya?ml$/, ""),
-      workflow: sorted.map((node) => {
-        const d = node.data as StepNodeData;
-        if (d.type === "claude") {
-          return {
-            name: d.title || "Claude Step",
-            agent: "claude",
-            prompt: d.prompt || "",
-            skip_permission: true,
-          };
-        }
-        return { name: d.title || "Shell Step", run: d.prompt || "" };
-      }),
-    };
+      setIsModalSaving(true);
+      setModalError(null);
 
-    setSaveStatus("saving");
-    try {
-      const res = await fetch("/api/workflow/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: selectedFile, content: yamlDump(definition) }),
-      });
-      if (res.ok) {
-        setSaveStatus("saved");
-        onSave?.(selectedFile, yamlDump(definition));
-      } else {
-        setSaveStatus("error");
+      // Build definition with updated data applied inline
+      const currentNodes = nodesRef.current.map((node) =>
+        node.id === id ? { ...node, data: { ...node.data, title, prompt } } : node,
+      );
+
+      const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
+
+      if (!selectedFile) {
+        // No file selected — update node state only, close modal
+        setNodesRef.current((nds) =>
+          nds.map((node) =>
+            node.id === id ? { ...node, data: { ...node.data, title, prompt } } : node,
+          ),
+        );
+        setEditingStepId(null);
+        setIsModalSaving(false);
+        return;
       }
-    } catch {
-      setSaveStatus("error");
-    } finally {
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    }
-  }, [selectedFile, saveStatus]);
+
+      const definition: WorkflowDefinition = {
+        name: selectedFile.replace(/\.ya?ml$/, ""),
+        workflow: sorted.map((node) => {
+          const d = node.data as StepNodeData;
+          if (d.type === "claude") {
+            return {
+              name: d.title || "Claude Step",
+              agent: "claude",
+              prompt: d.prompt || "",
+              skip_permission: true,
+            };
+          }
+          return { name: d.title || "Shell Step", run: d.prompt || "" };
+        }),
+      };
+
+      try {
+        const res = await fetch("/api/workflow/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: selectedFile, content: yamlDump(definition) }),
+        });
+
+        if (res.ok) {
+          // Persist node state update only after successful save
+          setNodesRef.current((nds) =>
+            nds.map((node) =>
+              node.id === id ? { ...node, data: { ...node.data, title, prompt } } : node,
+            ),
+          );
+          setEditingStepId(null);
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 2000);
+          onSave?.(selectedFile, yamlDump(definition));
+        } else {
+          setModalError("Failed to save workflow. Please try again.");
+        }
+      } catch {
+        setModalError("Network error. Please try again.");
+      } finally {
+        setIsModalSaving(false);
+      }
+    },
+    [isModalSaving, selectedFile, onSave],
+  );
+
+  const editingNode = editingStepId ? nodes.find((n) => n.id === editingStepId) : null;
 
   return (
     <div className="relative h-full w-full">
@@ -329,29 +362,18 @@ export function WorkflowCanvas({
           )}
         </ToolbarButton>
 
-        {selectedFile && (
-          <>
-            <div className="mx-1 h-6 w-px bg-border" />
-            <ToolbarButton
-              onClick={() => void saveWorkflow()}
-              disabled={saveStatus === "saving" || nodes.length === 0}
-              className={
-                saveStatus === "saved"
-                  ? "bg-orange hover:bg-orange/90 disabled:bg-disabled disabled:text-muted-fg"
-                  : saveStatus === "error"
-                    ? "bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
-                    : "bg-dark hover:bg-ink disabled:bg-disabled disabled:text-muted-fg"
-              }
-            >
-              {saveStatus === "saving"
-                ? "Saving..."
+        {saveStatus !== "idle" && (
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+              saveStatus === "saving"
+                ? "bg-disabled text-secondary"
                 : saveStatus === "saved"
-                  ? "✓ Saved"
-                  : saveStatus === "error"
-                    ? "✗ Error"
-                    : "Save"}
-            </ToolbarButton>
-          </>
+                  ? "border border-orange/30 bg-orange/10 text-orange"
+                  : "border border-pink/30 bg-pink/10 text-pink"
+            }`}
+          >
+            {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : "✗ Error"}
+          </span>
         )}
       </div>
 
@@ -405,6 +427,22 @@ export function WorkflowCanvas({
           }}
         />
       </ReactFlow>
+
+      {editingNode && (
+        <StepEditModal
+          stepId={editingStepId!}
+          stepType={(editingNode.data as StepNodeData).type}
+          initialTitle={(editingNode.data as StepNodeData).title}
+          initialPrompt={(editingNode.data as StepNodeData).prompt}
+          saving={isModalSaving}
+          error={modalError}
+          onSave={(id, title, prompt) => void handleModalSave(id, title, prompt)}
+          onClose={() => {
+            setEditingStepId(null);
+            setModalError(null);
+          }}
+        />
+      )}
     </div>
   );
 }
