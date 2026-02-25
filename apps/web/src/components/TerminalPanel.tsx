@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { OutputLoadingIndicator } from "./OutputLoadingIndicator";
 import type { LogLine } from "./WorkflowCanvas";
 
@@ -100,9 +101,9 @@ export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
           type="button"
           onClick={onClose}
           title="Close output panel"
-          className="ml-auto rounded px-1 text-sm text-muted-fg transition hover:text-pink"
+          className="ml-auto cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 hover:text-pink"
         >
-          ✕
+          <X size={14} />
         </button>
       </div>
 

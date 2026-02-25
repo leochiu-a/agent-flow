@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { AlertCircle, Check, Clock, Play } from "lucide-react";
 import {
   Background,
   BackgroundVariant,
@@ -358,7 +359,10 @@ export function WorkflowCanvas({
               Running...
             </>
           ) : (
-            "▶ Run"
+            <>
+              <Play size={11} className="mr-1" />
+              Run
+            </>
           )}
         </ToolbarButton>
 
@@ -372,24 +376,26 @@ export function WorkflowCanvas({
                   : "border border-pink/30 bg-pink/10 text-pink"
             }`}
           >
-            {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : "✗ Error"}
+            {saveStatus === "saving" ? (
+              "Saving…"
+            ) : saveStatus === "saved" ? (
+              <>
+                <Check size={11} className="mr-0.5" />
+                Saved
+              </>
+            ) : (
+              <>
+                <AlertCircle size={11} className="mr-0.5" />
+                Error
+              </>
+            )}
           </span>
         )}
       </div>
 
       {nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-placeholder">
-          <svg
-            width="64"
-            height="64"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4l3 3" />
-          </svg>
+          <Clock size={64} strokeWidth={1} />
           <div className="text-sm tracking-wide">
             Add a step above to start building your workflow
           </div>

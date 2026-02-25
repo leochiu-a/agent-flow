@@ -1,5 +1,6 @@
 "use client";
 
+import { Bot, Pencil, Terminal, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
 export interface StepNodeData {
@@ -50,27 +51,28 @@ export function StepNode({ id, data, selected }: NodeProps) {
       {/* Header: type badge + action buttons */}
       <div className="mb-2.5 flex items-center gap-2">
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
         >
-          {isAgent ? "⚙ Claude" : "$ Shell"}
+          {isAgent ? <Bot size={10} /> : <Terminal size={10} />}
+          {isAgent ? "Claude" : "Shell"}
         </span>
 
         <div className="ml-auto flex items-center gap-1">
           <button
             type="button"
             onClick={() => d.onRequestEdit(id)}
-            className={`nodrag cursor-pointer rounded-md px-1.5 py-0.5 text-base leading-none text-muted-fg transition hover:bg-black/5 ${tone.editHover}`}
+            className={`nodrag cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 ${tone.editHover}`}
             title="Edit step"
           >
-            ✎
+            <Pencil size={13} />
           </button>
           <button
             type="button"
             onClick={() => d.onDelete(id)}
-            className="nodrag cursor-pointer rounded-md px-1.5 py-0.5 text-base leading-none text-muted-fg transition hover:bg-black/5 hover:text-pink"
+            className="nodrag cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 hover:text-pink"
             title="Delete step"
           >
-            ✕
+            <X size={13} />
           </button>
         </div>
       </div>
@@ -85,7 +87,9 @@ export function StepNode({ id, data, selected }: NodeProps) {
         <div className="font-mono text-[11px] leading-relaxed text-muted-fg">{preview}</div>
       ) : (
         <div className="font-mono text-[11px] italic text-placeholder">
-          {isAgent ? "No prompt yet — click ✎ to edit" : "No command yet — click ✎ to edit"}
+          {isAgent
+            ? "No prompt yet — click the edit button"
+            : "No command yet — click the edit button"}
         </div>
       )}
 

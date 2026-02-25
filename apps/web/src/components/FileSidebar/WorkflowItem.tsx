@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { SessionItem } from "./SessionItem";
 import type { SessionSummary } from "./types";
 
@@ -42,11 +43,10 @@ export function WorkflowItem({
         }`}
       >
         {/* Expand arrow */}
-        <span
-          className={`shrink-0 text-[10px] transition-transform duration-150 text-muted-fg ${isExpanded ? "rotate-90" : ""}`}
-        >
-          ▶
-        </span>
+        <ChevronRight
+          size={12}
+          className={`shrink-0 text-muted-fg transition-transform duration-150 ${isExpanded ? "rotate-90" : ""}`}
+        />
 
         <span className="min-w-0 flex-1 truncate">{filename}</span>
 
