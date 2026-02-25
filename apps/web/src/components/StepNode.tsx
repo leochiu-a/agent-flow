@@ -59,7 +59,7 @@ export function StepNode({ id, data, selected }: NodeProps) {
           <button
             type="button"
             onClick={() => d.onRequestEdit(id)}
-            className={`nodrag rounded px-1 text-sm leading-none text-muted-fg transition ${tone.editHover}`}
+            className={`nodrag cursor-pointer rounded-md px-1.5 py-0.5 text-base leading-none text-muted-fg transition hover:bg-black/5 ${tone.editHover}`}
             title="Edit step"
           >
             ✎
@@ -67,7 +67,7 @@ export function StepNode({ id, data, selected }: NodeProps) {
           <button
             type="button"
             onClick={() => d.onDelete(id)}
-            className="nodrag rounded px-1 text-base leading-none text-muted-fg transition hover:text-pink"
+            className="nodrag cursor-pointer rounded-md px-1.5 py-0.5 text-base leading-none text-muted-fg transition hover:bg-black/5 hover:text-pink"
             title="Delete step"
           >
             ✕

@@ -463,7 +463,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold text-white transition disabled:cursor-not-allowed ${className}`}
+      className={`inline-flex cursor-pointer items-center rounded-md px-3 py-1.5 text-xs font-semibold text-white transition disabled:cursor-not-allowed ${className}`}
     >
       {children}
     </button>

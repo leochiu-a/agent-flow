@@ -79,7 +79,7 @@ export function ClaudeStepModal({
         <button
           type="button"
           onClick={handleCancel}
-          className="rounded-md border border-border px-3 py-1.5 text-xs text-secondary transition hover:border-muted-fg hover:text-dark"
+          className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-secondary transition hover:border-muted-fg hover:text-dark"
         >
           Cancel
         </button>
@@ -87,7 +87,7 @@ export function ClaudeStepModal({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-pink px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:bg-disabled disabled:text-muted-fg"
+          className="cursor-pointer rounded-md bg-pink px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:bg-disabled disabled:text-muted-fg"
         >
           {saving ? "Saving..." : "Save Step"}
         </button>
