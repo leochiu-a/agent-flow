@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Folder, GitBranch, Plug, Trash2 } from "lucide-react";
+import { ChevronRight, Folder, FolderPlus, GitBranch, Plug, Trash2 } from "lucide-react";
 
 import type { LogLine } from "../WorkflowCanvas";
 import { formatDuration } from "../../utils/time";
@@ -338,16 +338,18 @@ export function FileSidebar({
           ))
         )}
 
-        <div className="border-t border-border mt-2 pt-2">
+        <div className="mt-2 pt-2">
           <div className="flex items-center gap-1.5 px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-fg">
             Folder
             <Button
-              variant="outline"
-              size="xs"
+              variant="icon-border"
+              size="icon-xs"
               onClick={() => setShowFolderBrowser(true)}
-              className="ml-auto"
+              className="ml-auto text-sm leading-none"
+              aria-label="Browse folders"
+              title="Browse folders"
             >
-              Browse
+              <FolderPlus size={12} />
             </Button>
           </div>
 
@@ -396,7 +398,7 @@ export function FileSidebar({
                   </button>
 
                   {isExpanded && (
-                    <div className="border-l border-border ml-4">
+                    <div className="ml-4">
                       {loadingFolderSessions ? (
                         <div className="px-3 py-2 text-[10px] text-muted-fg">Loading...</div>
                       ) : folderSessions.length === 0 ? (

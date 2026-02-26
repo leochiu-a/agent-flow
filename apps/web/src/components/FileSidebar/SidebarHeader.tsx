@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarHeaderProps {
@@ -18,8 +19,9 @@ export function SidebarHeader({ onCreateClick, title = "AI Workflows" }: Sidebar
         onClick={onCreateClick}
         title="New Workflow"
         className="text-sm leading-none"
+        aria-label="New Workflow"
       >
-        +
+        <Plus size={12} />
       </Button>
     </div>
   );
