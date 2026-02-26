@@ -385,27 +385,21 @@ export function WorkflowCanvas({
 
         <div className="mx-1 h-6 w-px bg-border" />
 
-        <Button
-          variant="pink"
-          size="sm"
-          onClick={runWorkflow}
-          disabled={running || nodes.length === 0}
-        >
-          <>
-            <Play size={11} className="mr-1" />
-            Run
-          </>
-        </Button>
-
-        {running && (
+        {running ? (
           <Button
             variant="outline"
             size="sm"
             onClick={() => void stopWorkflow()}
             disabled={!sessionId || stopping}
+            className="border-red-200 text-red-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
           >
             <Square size={11} className="mr-1" />
             {stopping ? "Stopping…" : "Stop"}
+          </Button>
+        ) : (
+          <Button variant="pink" size="sm" onClick={runWorkflow} disabled={nodes.length === 0}>
+            <Play size={11} className="mr-1" />
+            Run
           </Button>
         )}
 
