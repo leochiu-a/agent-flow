@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Check, Copy, X } from "lucide-react";
 import { OutputLoadingIndicator } from "./OutputLoadingIndicator";
 import type { LogLine } from "./WorkflowCanvas";
+import { useCopyToClipboard } from "usehooks-ts";
 
 // Typewriter for the "Agent is thinking" headline
 function useTypewriter(text: string, speed = 48): string {
@@ -42,6 +43,11 @@ const STALL_THRESHOLD_MS = 3000;
 export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const headline = useTypewriter(lines.length === 0 && running ? "Agent is thinking..." : "", 55);
+  const [copiedText, copy] = useCopyToClipboard();
+
+  const handleCopy = () => {
+    copy(lines.map((l) => l.text).join("\n"));
+  };
 
   // Track when the last log line arrived to detect stalls
   const [lastLineAt, setLastLineAt] = useState<number | null>(null);
@@ -97,14 +103,26 @@ export function TerminalPanel({ lines, running, onClose }: TerminalPanelProps) {
           </span>
         )}
 
-        <button
-          type="button"
-          onClick={onClose}
-          title="Close output panel"
-          className="ml-auto cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 hover:text-pink"
-        >
-          <X size={14} />
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          {lines.length > 0 && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              title="Copy output"
+              className="cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 hover:text-pink"
+            >
+              {copiedText ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            title="Close output panel"
+            className="cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 hover:text-pink"
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-surface px-4 py-3 font-mono text-xs leading-relaxed">

@@ -85,7 +85,9 @@ export function StepNode({ id, data, selected }: NodeProps) {
 
       {/* Prompt / command preview */}
       {preview ? (
-        <div className="font-mono text-[11px] leading-relaxed text-muted-fg">{preview}</div>
+        <div className="break-all font-mono text-[11px] leading-relaxed text-muted-fg">
+          {preview}
+        </div>
       ) : (
         <div className="font-mono text-[11px] italic text-placeholder">
           {isAgent
