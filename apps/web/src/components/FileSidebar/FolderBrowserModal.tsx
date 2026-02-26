@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Folder, FolderUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DirectoryNode {
   name: string;
@@ -33,6 +34,7 @@ export function FolderBrowserModal({
   const [directories, setDirectories] = useState<DirectoryNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showHiddenFolders, setShowHiddenFolders] = useState(false);
 
   const fetchDirectory = async (targetPath?: string) => {
     setLoading(true);
@@ -66,6 +68,11 @@ export function FolderBrowserModal({
     return currentPath;
   }, [currentPath]);
 
+  const visibleDirectories = useMemo(() => {
+    if (showHiddenFolders) return directories;
+    return directories.filter((directory) => !directory.name.startsWith("."));
+  }, [directories, showHiddenFolders]);
+
   if (!open) return null;
 
   return (
@@ -98,8 +105,17 @@ export function FolderBrowserModal({
         </div>
 
         <div className="border-b border-border px-4 py-2">
-          <div className="truncate text-[11px] text-ink" title={breadcrumb}>
-            {breadcrumb || "Loading..."}
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 truncate text-[11px] text-ink" title={breadcrumb}>
+              {breadcrumb || "Loading..."}
+            </div>
+            <label className="flex items-center gap-1.5 text-[11px] text-ink">
+              <Checkbox
+                checked={showHiddenFolders}
+                onCheckedChange={(checked) => setShowHiddenFolders(checked === true)}
+              />
+              Show hidden
+            </label>
           </div>
         </div>
 
@@ -122,10 +138,10 @@ export function FolderBrowserModal({
             <div className="px-2 py-3 text-[11px] text-pink">{error}</div>
           ) : loading ? (
             <div className="px-2 py-3 text-[11px] text-muted-fg">Loading folders...</div>
-          ) : directories.length === 0 ? (
+          ) : visibleDirectories.length === 0 ? (
             <div className="px-2 py-3 text-[11px] text-muted-fg">No subfolders.</div>
           ) : (
-            directories.map((directory) => (
+            visibleDirectories.map((directory) => (
               <button
                 key={directory.path}
                 type="button"
