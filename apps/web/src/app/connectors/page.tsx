@@ -4,7 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 
-interface ConnectorRecord {
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface SlackConnectorRecord {
   id: string;
   type: "slack";
   name: string;
@@ -13,12 +17,27 @@ interface ConnectorRecord {
   lastError?: string;
 }
 
-interface SlackOAuthConfigPublic {
+interface JiraConnectorRecord {
+  id: string;
+  type: "jira";
+  name: string;
+  status: "connected" | "disconnected" | "error" | "connecting";
+  workspace: { siteUrl: string; email: string; accountId?: string; displayName?: string };
+  lastError?: string;
+}
+
+type ConnectorStatus = "connected" | "disconnected" | "error" | "connecting";
+
+interface OAuthConfigPublic {
   configured: boolean;
   redirectUri?: string;
 }
 
-function StatusBadge({ status }: { status: ConnectorRecord["status"] }) {
+// ---------------------------------------------------------------------------
+// Shared components
+// ---------------------------------------------------------------------------
+
+function StatusBadge({ status }: { status: ConnectorStatus }) {
   const styles = {
     connected: "bg-pink/10 text-pink border border-pink/30",
     disconnected: "bg-disabled text-ink border border-border",
@@ -34,26 +53,31 @@ function StatusBadge({ status }: { status: ConnectorRecord["status"] }) {
   );
 }
 
-const SLACK_OAUTH_CALLBACK_PATH = "/api/connectors/slack/oauth/callback";
-
-function buildDefaultRedirectUri(origin: string): string {
-  return `${origin}${SLACK_OAUTH_CALLBACK_PATH}`;
-}
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function ConnectorsPage() {
-  const [connectors, setConnectors] = useState<ConnectorRecord[]>([]);
+  // ── Slack state ──
+  const [slackConnectors, setSlackConnectors] = useState<SlackConnectorRecord[]>([]);
+  const [slackOauthConfig, setSlackOauthConfig] = useState<OAuthConfigPublic | null>(null);
+  const [showSlackConfigure, setShowSlackConfigure] = useState(false);
+  const [slackClientId, setSlackClientId] = useState("");
+  const [slackClientSecret, setSlackClientSecret] = useState("");
+  const [slackRedirectUri, setSlackRedirectUri] = useState("");
+  const [slackCfgSaving, setSlackCfgSaving] = useState(false);
+  const [slackCfgError, setSlackCfgError] = useState<string | null>(null);
+
+  // ── Jira state ──
+  const [jiraConnectors, setJiraConnectors] = useState<JiraConnectorRecord[]>([]);
+  const [jiraSiteUrl, setJiraSiteUrl] = useState("");
+  const [jiraEmail, setJiraEmail] = useState("");
+  const [jiraApiToken, setJiraApiToken] = useState("");
+  const [jiraConnecting, setJiraConnecting] = useState(false);
+  const [jiraConnectError, setJiraConnectError] = useState<string | null>(null);
+
+  // ── Shared test/disconnect state ──
   const [loading, setLoading] = useState(true);
-  const [oauthConfig, setOauthConfig] = useState<SlackOAuthConfigPublic | null>(null);
-
-  // Configure OAuth app state
-  const [showConfigure, setShowConfigure] = useState(false);
-  const [cfgClientId, setCfgClientId] = useState("");
-  const [cfgClientSecret, setCfgClientSecret] = useState("");
-  const [cfgRedirectUri, setCfgRedirectUri] = useState("");
-  const [cfgSaving, setCfgSaving] = useState(false);
-  const [cfgError, setCfgError] = useState<string | null>(null);
-
-  // Test / disconnect state
   const [testingId, setTestingId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{
@@ -62,19 +86,21 @@ export default function ConnectorsPage() {
     message?: string;
   } | null>(null);
 
-  const fetchConnectors = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const [connRes, cfgRes] = await Promise.all([
+      const [slackConnRes, slackCfgRes, jiraConnRes] = await Promise.all([
         fetch("/api/connectors/slack/list"),
         fetch("/api/connectors/slack/config"),
+        fetch("/api/connectors/jira/list"),
       ]);
-      const connData = (await connRes.json()) as { connectors: ConnectorRecord[] };
-      const cfgData = (await cfgRes.json()) as SlackOAuthConfigPublic;
-      setConnectors(connData.connectors);
-      setOauthConfig(cfgData);
-      if (cfgData.redirectUri) {
-        setCfgRedirectUri(cfgData.redirectUri);
-      }
+      const slackData = (await slackConnRes.json()) as { connectors: SlackConnectorRecord[] };
+      const slackCfg = (await slackCfgRes.json()) as OAuthConfigPublic;
+      const jiraData = (await jiraConnRes.json()) as { connectors: JiraConnectorRecord[] };
+
+      setSlackConnectors(slackData.connectors);
+      setSlackOauthConfig(slackCfg);
+      if (slackCfg.redirectUri) setSlackRedirectUri(slackCfg.redirectUri);
+      setJiraConnectors(jiraData.connectors);
     } catch {
       // ignore
     } finally {
@@ -83,60 +109,99 @@ export default function ConnectorsPage() {
   }, []);
 
   useEffect(() => {
-    void fetchConnectors();
-  }, [fetchConnectors]);
+    void fetchAll();
+  }, [fetchAll]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setCfgRedirectUri((value) => value || buildDefaultRedirectUri(window.location.origin));
+    const SLACK_OAUTH_CALLBACK_PATH = "/api/connectors/slack/oauth/callback";
+    setSlackRedirectUri((v) => v || `${window.location.origin}${SLACK_OAUTH_CALLBACK_PATH}`);
   }, []);
 
-  const handleSaveConfig = async () => {
-    if (!cfgClientId.trim() || !cfgClientSecret.trim()) return;
-    setCfgSaving(true);
-    setCfgError(null);
+  // ── Slack handlers ──
+
+  const handleSlackSaveConfig = async () => {
+    if (!slackClientId.trim() || !slackClientSecret.trim()) return;
+    setSlackCfgSaving(true);
+    setSlackCfgError(null);
     try {
-      const fallbackRedirectUri =
-        typeof window !== "undefined" ? buildDefaultRedirectUri(window.location.origin) : "";
+      const fallback =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/api/connectors/slack/oauth/callback`
+          : "";
       const res = await fetch("/api/connectors/slack/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clientId: cfgClientId.trim(),
-          clientSecret: cfgClientSecret.trim(),
-          redirectUri: cfgRedirectUri.trim() || fallbackRedirectUri,
+          clientId: slackClientId.trim(),
+          clientSecret: slackClientSecret.trim(),
+          redirectUri: slackRedirectUri.trim() || fallback,
         }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (data.ok) {
         window.location.href = "/api/connectors/slack/oauth/start?returnTo=/connectors";
       } else {
-        setCfgError(data.error ?? "Failed to save");
+        setSlackCfgError(data.error ?? "Failed to save");
       }
     } catch {
-      setCfgError("Network error");
+      setSlackCfgError("Network error");
     } finally {
-      setCfgSaving(false);
+      setSlackCfgSaving(false);
     }
   };
 
-  const handleRemoveConfig = async () => {
+  const handleSlackRemoveConfig = async () => {
     await fetch("/api/connectors/slack/config", { method: "DELETE" });
-    await fetchConnectors();
+    await fetchAll();
   };
 
-  const handleTest = async (id: string) => {
+  // ── Jira handlers ──
+
+  const handleJiraConnect = async () => {
+    if (!jiraSiteUrl.trim() || !jiraEmail.trim() || !jiraApiToken.trim()) return;
+    setJiraConnecting(true);
+    setJiraConnectError(null);
+    try {
+      const res = await fetch("/api/connectors/jira/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteUrl: jiraSiteUrl.trim(),
+          email: jiraEmail.trim(),
+          apiToken: jiraApiToken.trim(),
+        }),
+      });
+      const data = (await res.json()) as { ok: boolean; error?: string };
+      if (data.ok) {
+        setJiraSiteUrl("");
+        setJiraEmail("");
+        setJiraApiToken("");
+        await fetchAll();
+      } else {
+        setJiraConnectError(data.error ?? "Connection failed");
+      }
+    } catch {
+      setJiraConnectError("Network error");
+    } finally {
+      setJiraConnecting(false);
+    }
+  };
+
+  // ── Shared test/disconnect ──
+
+  const handleTest = async (id: string, provider: "slack" | "jira") => {
     setTestingId(id);
     setTestResult(null);
     try {
-      const res = await fetch("/api/connectors/slack/test", {
+      const res = await fetch(`/api/connectors/${provider}/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ connectionId: id, mode: "smoke" }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       setTestResult({ id, ok: data.ok, message: data.error });
-      await fetchConnectors();
+      await fetchAll();
     } catch {
       setTestResult({ id, ok: false, message: "Network error" });
     } finally {
@@ -144,21 +209,22 @@ export default function ConnectorsPage() {
     }
   };
 
-  const handleDisconnect = async (id: string) => {
+  const handleDisconnect = async (id: string, provider: "slack" | "jira") => {
     setDisconnectingId(id);
     try {
-      await fetch("/api/connectors/slack/disconnect", {
+      await fetch(`/api/connectors/${provider}/disconnect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ connectionId: id }),
       });
-      await fetchConnectors();
+      await fetchAll();
     } finally {
       setDisconnectingId(null);
     }
   };
 
-  const hasConnected = connectors.some((c) => c.status === "connected");
+  const hasSlackConnected = slackConnectors.some((c) => c.status === "connected");
+  const hasJiraConnected = jiraConnectors.some((c) => c.status === "connected");
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-canvas text-dark">
@@ -172,10 +238,14 @@ export default function ConnectorsPage() {
         <FileSidebar />
 
         <div className="mx-auto w-full max-w-xl flex-1 overflow-y-auto px-6 py-8">
-          {/* Connected workspaces */}
-          {!loading && connectors.length > 0 && (
+          {/* ══════════════════════════════════════════════════════════
+              SLACK SECTION
+          ══════════════════════════════════════════════════════════ */}
+
+          {/* Connected Slack workspaces */}
+          {!loading && slackConnectors.length > 0 && (
             <div className="mb-8 flex flex-col gap-3">
-              {connectors.map((c) => (
+              {slackConnectors.map((c) => (
                 <div
                   key={c.id}
                   className="rounded-lg border border-border bg-white px-4 py-3 shadow-sm"
@@ -208,7 +278,7 @@ export default function ConnectorsPage() {
                     <div className="flex shrink-0 items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => void handleTest(c.id)}
+                        onClick={() => void handleTest(c.id, "slack")}
                         disabled={testingId === c.id || c.status === "disconnected"}
                         className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -216,7 +286,7 @@ export default function ConnectorsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void handleDisconnect(c.id)}
+                        onClick={() => void handleDisconnect(c.id, "slack")}
                         disabled={disconnectingId === c.id || c.status === "disconnected"}
                         className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-orange hover:text-orange disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -229,7 +299,7 @@ export default function ConnectorsPage() {
             </div>
           )}
 
-          {/* ── Connect panel ── */}
+          {/* Slack connect panel */}
           <div className="rounded-lg border border-border bg-white px-5 py-5 shadow-sm">
             <div className="mb-5 flex items-center gap-2">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
@@ -239,11 +309,10 @@ export default function ConnectorsPage() {
                 />
               </svg>
               <span className="text-sm font-bold text-dark">
-                {hasConnected ? "Connect another workspace" : "Connect Slack"}
+                {hasSlackConnected ? "Connect another Slack workspace" : "Connect Slack"}
               </span>
             </div>
 
-            {/* Step 1: create app */}
             <ol className="mb-5 space-y-2 text-[11px] text-ink">
               <li className="flex gap-2">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
@@ -269,33 +338,31 @@ export default function ConnectorsPage() {
                 </span>
                 <span>
                   Enter your credentials below, then click{" "}
-                  <strong className="text-dark">Connect with Slack</strong> to authorize via OAuth —
-                  no admin approval needed.
+                  <strong className="text-dark">Connect with Slack</strong> to authorize via OAuth.
                 </span>
               </li>
             </ol>
 
-            {/* OAuth config form */}
-            {!oauthConfig?.configured || showConfigure ? (
+            {!slackOauthConfig?.configured || showSlackConfigure ? (
               <div className="space-y-2">
                 <input
                   type="text"
-                  value={cfgClientId}
-                  onChange={(e) => setCfgClientId(e.target.value)}
+                  value={slackClientId}
+                  onChange={(e) => setSlackClientId(e.target.value)}
                   placeholder="Client ID"
                   className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
                 />
                 <input
                   type="password"
-                  value={cfgClientSecret}
-                  onChange={(e) => setCfgClientSecret(e.target.value)}
+                  value={slackClientSecret}
+                  onChange={(e) => setSlackClientSecret(e.target.value)}
                   placeholder="Client Secret"
                   className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
                 />
                 <input
                   type="text"
-                  value={cfgRedirectUri}
-                  onChange={(e) => setCfgRedirectUri(e.target.value)}
+                  value={slackRedirectUri}
+                  onChange={(e) => setSlackRedirectUri(e.target.value)}
                   placeholder="Redirect URI"
                   className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 font-mono text-[10px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
                 />
@@ -303,26 +370,26 @@ export default function ConnectorsPage() {
                   Add the Redirect URI above to your Slack App under{" "}
                   <span className="text-dark">OAuth &amp; Permissions → Redirect URLs</span>.
                 </div>
-                {oauthConfig?.configured && showConfigure && (
+                {slackOauthConfig?.configured && showSlackConfigure && (
                   <div className="text-[10px] leading-relaxed text-muted-fg">
                     Reconfiguration requires entering Client ID and Client Secret again for safety.
                   </div>
                 )}
-                {cfgError && <div className="text-[11px] text-orange">{cfgError}</div>}
+                {slackCfgError && <div className="text-[11px] text-orange">{slackCfgError}</div>}
                 <button
                   type="button"
-                  onClick={() => void handleSaveConfig()}
-                  disabled={cfgSaving || !cfgClientId.trim() || !cfgClientSecret.trim()}
+                  onClick={() => void handleSlackSaveConfig()}
+                  disabled={slackCfgSaving || !slackClientId.trim() || !slackClientSecret.trim()}
                   className="w-full rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {cfgSaving ? "Saving…" : "Connect with Slack"}
+                  {slackCfgSaving ? "Saving…" : "Connect with Slack"}
                 </button>
-                {oauthConfig?.configured && showConfigure && (
+                {slackOauthConfig?.configured && showSlackConfigure && (
                   <button
                     type="button"
                     onClick={() => {
-                      setShowConfigure(false);
-                      setCfgError(null);
+                      setShowSlackConfigure(false);
+                      setSlackCfgError(null);
                     }}
                     className="w-full rounded-md border border-border py-1.5 text-xs font-semibold text-ink transition hover:border-pink hover:text-pink"
                   >
@@ -335,7 +402,7 @@ export default function ConnectorsPage() {
                 <div className="flex items-center gap-2 text-[11px] text-muted-fg">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-pink" />
                   OAuth app configured
-                  <span className="font-mono text-[10px]">{oauthConfig.redirectUri}</span>
+                  <span className="font-mono text-[10px]">{slackOauthConfig.redirectUri}</span>
                 </div>
                 <div className="flex gap-2">
                   <a
@@ -346,14 +413,14 @@ export default function ConnectorsPage() {
                   </a>
                   <button
                     type="button"
-                    onClick={() => setShowConfigure(true)}
+                    onClick={() => setShowSlackConfigure(true)}
                     className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-pink hover:text-pink"
                   >
                     Reconfigure
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleRemoveConfig()}
+                    onClick={() => void handleSlackRemoveConfig()}
                     className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-orange hover:text-orange"
                   >
                     Remove credentials
@@ -363,14 +430,164 @@ export default function ConnectorsPage() {
             )}
           </div>
 
+          {/* ══════════════════════════════════════════════════════════
+              JIRA SECTION
+          ══════════════════════════════════════════════════════════ */}
+
+          {/* Connected Jira sites */}
+          {!loading && jiraConnectors.length > 0 && (
+            <div className="mb-4 mt-8 flex flex-col gap-3">
+              {jiraConnectors.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-lg border border-border bg-white px-4 py-3 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-semibold text-dark">{c.name}</span>
+                        <StatusBadge status={c.status} />
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-muted-fg">
+                        {c.workspace.email}
+                        {c.workspace.displayName && ` · ${c.workspace.displayName}`}
+                      </div>
+                      <div className="text-[11px] font-mono text-muted-fg">
+                        {c.workspace.siteUrl.replace(/^https?:\/\//, "")}
+                      </div>
+                      {c.lastError && (
+                        <div className="mt-1 text-[11px] text-orange">{c.lastError}</div>
+                      )}
+                      {testResult?.id === c.id && (
+                        <div
+                          className={`mt-1 text-[11px] ${testResult.ok ? "text-pink" : "text-orange"}`}
+                        >
+                          {testResult.ok
+                            ? "✓ Connection OK"
+                            : `✗ ${testResult.message ?? "Test failed"}`}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleTest(c.id, "jira")}
+                        disabled={testingId === c.id || c.status === "disconnected"}
+                        className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {testingId === c.id ? "Testing…" : "Test"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDisconnect(c.id, "jira")}
+                        disabled={disconnectingId === c.id || c.status === "disconnected"}
+                        className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-orange hover:text-orange disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {disconnectingId === c.id ? "…" : "Disconnect"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Jira connect panel — only shown when no active connection */}
+          {!hasJiraConnected && (
+            <div className="mt-6 rounded-lg border border-border bg-white px-5 py-5 shadow-sm">
+              <div className="mb-5 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none" className="shrink-0">
+                  <path
+                    d="M15.977 0C7.163 0 0 7.163 0 15.977c0 8.815 7.163 16.046 15.977 16.046 8.815 0 16.046-7.231 16.046-16.046C32.023 7.163 24.792 0 15.977 0zm.137 5.534l6.617 9.72-6.617 9.72-6.617-9.72 6.617-9.72z"
+                    fill="#2684FF"
+                  />
+                </svg>
+                <span className="text-sm font-bold text-dark">Connect Jira</span>
+              </div>
+
+              <ol className="mb-5 space-y-2 text-[11px] text-ink">
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
+                    1
+                  </span>
+                  <span>
+                    Go to{" "}
+                    <a
+                      href="https://id.atlassian.com/manage-profile/security/api-tokens"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-pink underline underline-offset-2 hover:opacity-80"
+                    >
+                      Atlassian API Tokens
+                    </a>{" "}
+                    and create a new token. Copy the generated value.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
+                    2
+                  </span>
+                  <span>
+                    Enter your Jira site URL, Atlassian account email, and the API token below.
+                  </span>
+                </li>
+              </ol>
+
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={jiraSiteUrl}
+                  onChange={(e) => setJiraSiteUrl(e.target.value)}
+                  placeholder="https://your-domain.atlassian.net"
+                  className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 font-mono text-[10px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
+                />
+                <input
+                  type="text"
+                  value={jiraEmail}
+                  onChange={(e) => setJiraEmail(e.target.value)}
+                  placeholder="your-email@example.com"
+                  className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
+                />
+                <input
+                  type="password"
+                  value={jiraApiToken}
+                  onChange={(e) => setJiraApiToken(e.target.value)}
+                  placeholder="API Token"
+                  className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
+                />
+                {jiraConnectError && (
+                  <div className="text-[11px] text-orange">{jiraConnectError}</div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void handleJiraConnect()}
+                  disabled={
+                    jiraConnecting ||
+                    !jiraSiteUrl.trim() ||
+                    !jiraEmail.trim() ||
+                    !jiraApiToken.trim()
+                  }
+                  className="w-full rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {jiraConnecting ? "Connecting…" : "Connect Jira"}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Info */}
           <div className="mt-6 rounded-lg border border-border bg-surface px-4 py-3 text-[11px] text-ink">
             <div className="font-semibold text-dark">How it works</div>
             <div className="mt-1 leading-relaxed">
-              After authorization, the token is written to{" "}
-              <code className="text-pink">.claude/settings.json</code> as an MCP server config. When
-              Claude Code runs a workflow step, it automatically starts the Slack MCP server — no
-              extra setup needed.
+              <strong>Slack</strong> — Token is written to{" "}
+              <code className="text-pink">.claude/settings.json</code> as an MCP server config.
+              Claude Code starts the Slack MCP server automatically on each workflow step.
+            </div>
+            <div className="mt-1 leading-relaxed">
+              <strong>Jira</strong> — API token is encrypted and stored locally. Workflow steps
+              receive <code className="text-pink">JIRA_SITE_URL</code>,{" "}
+              <code className="text-pink">JIRA_USER_EMAIL</code>, and{" "}
+              <code className="text-pink">JIRA_API_TOKEN</code> as environment variables.
             </div>
           </div>
         </div>

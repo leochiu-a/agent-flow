@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { WorkflowRunner } from "@agent-flow/core";
 import type { WorkflowDefinition, LogEntry, WorkflowResult } from "@agent-flow/core";
 import { writeSession, generateSessionId } from "@/lib/sessionStorage";
+import { loadConnectorEnv } from "@/lib/connectorEnv";
 
 export const runtime = "nodejs";
 
@@ -15,10 +16,11 @@ export async function POST(req: NextRequest) {
   const sessionId = generateSessionId();
   const startedAt = Date.now();
   const logs: LogEntry[] = [];
+  const connectorEnv = await loadConnectorEnv();
 
   const stream = new ReadableStream({
     start(controller) {
-      const runner = new WorkflowRunner();
+      const runner = new WorkflowRunner({ env: connectorEnv });
       const encoder = new TextEncoder();
 
       runner.on("log", (entry: LogEntry) => {

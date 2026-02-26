@@ -13,6 +13,11 @@ interface AppConfig {
     clientSecret?: string;
     redirectUri?: string;
   };
+  jira?: {
+    clientId?: string;
+    clientSecret?: string;
+    redirectUri?: string;
+  };
 }
 
 function normalizeOptionalConfigValue(value: string | undefined): string | undefined {
@@ -96,6 +101,59 @@ export async function getSlackOAuthConfigPublic(): Promise<{
   redirectUri?: string;
 }> {
   const cfg = await getSlackOAuthConfig();
+  if (!cfg) return { configured: false };
+  return { configured: true, redirectUri: cfg.redirectUri };
+}
+
+// ---------------------------------------------------------------------------
+// Jira credentials
+// ---------------------------------------------------------------------------
+
+export interface JiraOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
+/** Returns Jira OAuth credentials from local persisted config. */
+export async function getJiraOAuthConfig(): Promise<JiraOAuthConfig | null> {
+  const config = await readConfig();
+  const clientId = normalizeOptionalConfigValue(config.jira?.clientId);
+  const clientSecret = normalizeOptionalConfigValue(config.jira?.clientSecret);
+  const redirectUri = normalizeOptionalConfigValue(config.jira?.redirectUri);
+
+  if (clientId && clientSecret && redirectUri) {
+    return { clientId, clientSecret, redirectUri };
+  }
+  return null;
+}
+
+export async function saveJiraOAuthConfig(
+  clientId: string,
+  clientSecret: string,
+  redirectUri: string,
+): Promise<void> {
+  const config = await readConfig();
+  config.jira = {
+    clientId: clientId.trim(),
+    clientSecret: clientSecret.trim(),
+    redirectUri: redirectUri.trim(),
+  };
+  await writeConfig(config);
+}
+
+export async function clearJiraOAuthConfig(): Promise<void> {
+  const config = await readConfig();
+  delete config.jira;
+  await writeConfig(config);
+}
+
+/** Returns only non-secret fields safe to send to the client. */
+export async function getJiraOAuthConfigPublic(): Promise<{
+  configured: boolean;
+  redirectUri?: string;
+}> {
+  const cfg = await getJiraOAuthConfig();
   if (!cfg) return { configured: false };
   return { configured: true, redirectUri: cfg.redirectUri };
 }

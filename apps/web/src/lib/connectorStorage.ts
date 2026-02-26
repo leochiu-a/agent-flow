@@ -31,11 +31,13 @@ function getKeyFilePath(): string {
 // Types
 // ---------------------------------------------------------------------------
 
+export type ConnectorStatus = "connected" | "disconnected" | "error" | "connecting";
+
 export interface SlackConnectorRecord {
   id: string;
   type: "slack";
   name: string;
-  status: "connected" | "disconnected" | "error" | "connecting";
+  status: ConnectorStatus;
   workspace: {
     teamId?: string;
     teamName?: string;
@@ -50,6 +52,35 @@ export interface SlackConnectorRecord {
   updatedAt: number;
   lastCheckedAt?: number;
   lastError?: string;
+}
+
+export interface JiraConnectorRecord {
+  id: string;
+  type: "jira";
+  authMode: "manual";
+  name: string;
+  status: ConnectorStatus;
+  workspace: {
+    siteUrl: string;
+    email: string;
+    accountId?: string;
+    displayName?: string;
+  };
+  secretRef: string;
+  createdAt: number;
+  updatedAt: number;
+  lastCheckedAt?: number;
+  lastError?: string;
+}
+
+export type ConnectorRecord = SlackConnectorRecord | JiraConnectorRecord;
+
+/** Jira manual token secret stored as encrypted JSON. */
+export interface JiraTokenBundle {
+  version: 2;
+  provider: "jira";
+  authMode: "manual";
+  apiToken: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,30 +194,30 @@ export async function deleteSecret(connectionId: string): Promise<void> {
 // Connector record store
 // ---------------------------------------------------------------------------
 
-async function readRecords(): Promise<SlackConnectorRecord[]> {
+async function readRecords(): Promise<ConnectorRecord[]> {
   try {
     const raw = await fs.readFile(getRecordsPath(), "utf-8");
-    return JSON.parse(raw) as SlackConnectorRecord[];
+    return JSON.parse(raw) as ConnectorRecord[];
   } catch {
     return [];
   }
 }
 
-async function writeRecords(records: SlackConnectorRecord[]): Promise<void> {
+async function writeRecords(records: ConnectorRecord[]): Promise<void> {
   await ensureDirs();
   await fs.writeFile(getRecordsPath(), JSON.stringify(records, null, 2), "utf-8");
 }
 
-export async function listConnectors(): Promise<SlackConnectorRecord[]> {
+export async function listConnectors(): Promise<ConnectorRecord[]> {
   return readRecords();
 }
 
-export async function getConnector(connectionId: string): Promise<SlackConnectorRecord | null> {
+export async function getConnector(connectionId: string): Promise<ConnectorRecord | null> {
   const records = await readRecords();
   return records.find((r) => r.id === connectionId) ?? null;
 }
 
-export async function upsertConnector(record: SlackConnectorRecord): Promise<void> {
+export async function upsertConnector(record: ConnectorRecord): Promise<void> {
   const records = await readRecords();
   const idx = records.findIndex((r) => r.id === record.id);
   if (idx >= 0) {
@@ -199,8 +230,8 @@ export async function upsertConnector(record: SlackConnectorRecord): Promise<voi
 
 export async function updateConnectorStatus(
   connectionId: string,
-  status: SlackConnectorRecord["status"],
-  extra?: Partial<Pick<SlackConnectorRecord, "lastCheckedAt" | "lastError">>,
+  status: ConnectorStatus,
+  extra?: { lastCheckedAt?: number; lastError?: string },
 ): Promise<void> {
   const records = await readRecords();
   const rec = records.find((r) => r.id === connectionId);
@@ -210,4 +241,20 @@ export async function updateConnectorStatus(
   if (extra?.lastCheckedAt !== undefined) rec.lastCheckedAt = extra.lastCheckedAt;
   if (extra?.lastError !== undefined) rec.lastError = extra.lastError;
   await writeRecords(records);
+}
+
+// ---------------------------------------------------------------------------
+// Jira token bundle helpers
+// ---------------------------------------------------------------------------
+
+export async function saveJiraTokenBundle(
+  connectionId: string,
+  bundle: JiraTokenBundle,
+): Promise<string> {
+  return saveSecret(connectionId, JSON.stringify(bundle));
+}
+
+export async function loadJiraTokenBundle(connectionId: string): Promise<JiraTokenBundle> {
+  const raw = await loadSecret(connectionId);
+  return JSON.parse(raw) as JiraTokenBundle;
 }

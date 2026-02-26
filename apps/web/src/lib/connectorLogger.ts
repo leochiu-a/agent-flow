@@ -12,7 +12,7 @@ export type ConnectorEventType =
 
 export interface ConnectorEvent {
   event: ConnectorEventType;
-  provider: "slack";
+  provider: "slack" | "jira";
   timestamp: number;
   connectionId?: string;
   step?: string;
@@ -21,7 +21,9 @@ export interface ConnectorEvent {
   message?: string;
 }
 
-export function logConnectorEvent(event: Omit<ConnectorEvent, "timestamp" | "provider">): void {
+export function logConnectorEvent(
+  event: Omit<ConnectorEvent, "timestamp" | "provider"> & { provider?: "slack" | "jira" },
+): void {
   const entry: ConnectorEvent = {
     provider: "slack",
     timestamp: Date.now(),
