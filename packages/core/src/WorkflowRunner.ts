@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import yaml from "js-yaml";
 import type {
@@ -17,6 +17,7 @@ export interface RunnerOptions {
 
 export class WorkflowRunner extends EventEmitter {
   private aborted = false;
+  private currentChild: ChildProcess | null = null;
   private spawnEnv: NodeJS.ProcessEnv;
   private claudeSessionMode: ClaudeSessionMode = "isolated";
   private lastClaudeSessionId: string | null = null;
@@ -102,6 +103,7 @@ export class WorkflowRunner extends EventEmitter {
         stdio: ["ignore", "pipe", "pipe"],
         env: this.spawnEnv,
       });
+      this.currentChild = child;
 
       let stepSessionId = this.lastClaudeSessionId;
       let buffer = "";
@@ -124,6 +126,7 @@ export class WorkflowRunner extends EventEmitter {
         this.log("stderr", chunk.toString(), step.name);
       });
       child.on("close", (code) => {
+        this.currentChild = null;
         if (buffer.trim()) {
           try {
             const event = JSON.parse(buffer) as Record<string, unknown>;
@@ -184,5 +187,7 @@ export class WorkflowRunner extends EventEmitter {
 
   abort(): void {
     this.aborted = true;
+    this.currentChild?.kill();
+    this.currentChild = null;
   }
 }

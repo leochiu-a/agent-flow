@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, Clock, Play } from "lucide-react";
+import { AlertCircle, Check, Clock, Play, Square } from "lucide-react";
 import {
   Background,
   BackgroundVariant,
@@ -58,6 +58,8 @@ export function WorkflowCanvas({
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [running, setRunning] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [stopping, setStopping] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
@@ -168,6 +170,8 @@ export function WorkflowCanvas({
     }
 
     setRunning(true);
+    setStopping(false);
+    setSessionId(null);
     onRunningChange(true);
     onLinesChange(() => []);
 
@@ -199,9 +203,15 @@ export function WorkflowCanvas({
         body: JSON.stringify({ definition, workflowFile: selectedFile ?? undefined }),
       });
 
-      if (!res.body) {
-        return;
+      if (!res.ok) {
+        throw new Error(`Failed to start workflow (HTTP ${res.status})`);
       }
+
+      if (!res.body) {
+        throw new Error("Workflow stream is unavailable");
+      }
+
+      setSessionId(res.headers.get("X-Session-Id"));
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -252,10 +262,39 @@ export function WorkflowCanvas({
         { text: `[ERROR] ${(error as Error).message}`, level: "error" },
       ]);
     } finally {
+      setSessionId(null);
+      setStopping(false);
       setRunning(false);
       onRunningChange(false);
     }
   }, [onLinesChange, onRunningChange, running, workflowDefinition?.claude_session]);
+
+  const stopWorkflow = useCallback(async () => {
+    if (!sessionId || stopping) return;
+    setStopping(true);
+
+    try {
+      const res = await fetch("/api/workflow/stop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? `HTTP ${res.status}`);
+      }
+
+      onLinesChange((prev) => [...prev, { text: "[INFO] Stop signal sent.", level: "info" }]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      onLinesChange((prev) => [
+        ...prev,
+        { text: `[ERROR] Failed to stop workflow: ${message}`, level: "error" },
+      ]);
+      setStopping(false);
+    }
+  }, [onLinesChange, sessionId, stopping]);
 
   const handleModalSave = useCallback(
     async (id: string, title: string, prompt: string, skipPermission: boolean) => {
@@ -352,18 +391,23 @@ export function WorkflowCanvas({
           onClick={runWorkflow}
           disabled={running || nodes.length === 0}
         >
-          {running ? (
-            <>
-              <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-white/80" />
-              Running...
-            </>
-          ) : (
-            <>
-              <Play size={11} className="mr-1" />
-              Run
-            </>
-          )}
+          <>
+            <Play size={11} className="mr-1" />
+            Run
+          </>
         </Button>
+
+        {running && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void stopWorkflow()}
+            disabled={!sessionId || stopping}
+          >
+            <Square size={11} className="mr-1" />
+            {stopping ? "Stopping…" : "Stop"}
+          </Button>
+        )}
 
         {saveStatus !== "idle" && (
           <span
