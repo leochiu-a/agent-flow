@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { load as yamlLoad } from "js-yaml";
 import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
@@ -62,6 +63,12 @@ export default function Home() {
               Show Output
             </button>
           )}
+          <Link
+            href="/connectors"
+            className="rounded-md border border-border px-2.5 py-1 text-[11px] text-secondary transition hover:border-pink hover:text-pink"
+          >
+            Connectors
+          </Link>
         </div>
       </header>
 

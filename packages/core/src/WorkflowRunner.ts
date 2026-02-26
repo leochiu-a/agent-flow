@@ -10,8 +10,18 @@ import type {
   StepResult,
 } from "./types";
 
+export interface RunnerOptions {
+  env?: NodeJS.ProcessEnv;
+}
+
 export class WorkflowRunner extends EventEmitter {
   private aborted = false;
+  private spawnEnv: NodeJS.ProcessEnv;
+
+  constructor(options: RunnerOptions = {}) {
+    super();
+    this.spawnEnv = { ...process.env, ...options.env };
+  }
 
   override emit(event: "log", entry: LogEntry): boolean;
   override emit(event: "done", result: WorkflowResult): boolean;
@@ -66,7 +76,7 @@ export class WorkflowRunner extends EventEmitter {
   private runShellStep(step: WorkflowStep): Promise<StepResult> {
     return new Promise((resolve) => {
       this.log("info", `Running: ${step.run}`, step.name);
-      const child = spawn("sh", ["-c", step.run!], { stdio: "pipe" });
+      const child = spawn("sh", ["-c", step.run!], { stdio: "pipe", env: this.spawnEnv });
 
       child.stdout.on("data", (chunk: Buffer) => {
         this.log("stdout", chunk.toString(), step.name);
@@ -92,7 +102,10 @@ export class WorkflowRunner extends EventEmitter {
       args.push("--output-format", "stream-json", "--verbose");
       if (step.prompt) args.push("--print", step.prompt);
 
-      const child = spawn("claude", args, { stdio: ["ignore", "pipe", "pipe"] });
+      const child = spawn("claude", args, {
+        stdio: ["ignore", "pipe", "pipe"],
+        env: this.spawnEnv,
+      });
 
       let buffer = "";
       child.stdout.on("data", (chunk: Buffer) => {

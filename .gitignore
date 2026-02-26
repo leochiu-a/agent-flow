@@ -23,8 +23,10 @@ out
 .env
 .env.*
 
-# Workflow session records (runtime artifacts)
-apps/web/.ai-workflows/.sessions/
+.claude
+apps/web/.ai-workflows
+apps/web/.claude
+apps/web/certificates
 
 # Editor directories and files
 .vscode/*
