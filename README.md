@@ -85,3 +85,7 @@ pnpm dev
 - Node.js >= 20
 - pnpm >= 10
 - `claude` CLI installed and authenticated (for AI steps)
+
+## Acknowledgements
+
+This project uses [React Flow](https://reactflow.dev/) — a highly customizable React component for building node-based editors and interactive diagrams, developed by [xyflow](https://xyflow.com/).

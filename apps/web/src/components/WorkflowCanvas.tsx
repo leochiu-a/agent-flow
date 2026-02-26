@@ -446,6 +446,7 @@ export function WorkflowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        proOptions={{ hideAttribution: true }}
         fitView
         fitViewOptions={{ padding: 0.4, maxZoom: 1 }}
         minZoom={0.3}
