@@ -9,7 +9,7 @@ import type { LogLine } from "../WorkflowCanvas";
 import { formatDuration } from "../../utils/time";
 import { SidebarHeader } from "./SidebarHeader";
 import { CreateWorkflowModal } from "./CreateWorkflowModal";
-import { FolderBrowserModal } from "./FolderBrowserModal";
+import { FolderBrowserDialog } from "./FolderBrowserDialog";
 import { WorkflowItem } from "./WorkflowItem";
 import { SessionItem } from "./SessionItem";
 import type { SessionSummary, SessionDetail, SessionSummaryWithWorkflow } from "./types";
@@ -429,7 +429,7 @@ export function FileSidebar({
         </div>
       </div>
 
-      <FolderBrowserModal
+      <FolderBrowserDialog
         open={showFolderBrowser}
         initialPath={selectedFolder}
         onClose={() => setShowFolderBrowser(false)}

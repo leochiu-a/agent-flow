@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Folder, FolderUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 interface DirectoryNode {
   name: string;
@@ -16,19 +17,19 @@ interface BrowseResponse {
   directories: DirectoryNode[];
 }
 
-interface FolderBrowserModalProps {
+interface FolderBrowserDialogProps {
   open: boolean;
   initialPath?: string | null;
   onClose: () => void;
   onSelectFolder: (folderPath: string) => void;
 }
 
-export function FolderBrowserModal({
+export function FolderBrowserDialog({
   open,
   initialPath,
   onClose,
   onSelectFolder,
-}: FolderBrowserModalProps) {
+}: FolderBrowserDialogProps) {
   const [currentPath, setCurrentPath] = useState("");
   const [parentPath, setParentPath] = useState<string | null>(null);
   const [directories, setDirectories] = useState<DirectoryNode[]>([]);
@@ -63,31 +64,25 @@ export function FolderBrowserModal({
     void fetchDirectory(initialPath ?? undefined);
   }, [open, initialPath]);
 
-  const breadcrumb = useMemo(() => {
-    if (!currentPath) return "";
-    return currentPath;
-  }, [currentPath]);
-
   const visibleDirectories = useMemo(() => {
     if (showHiddenFolders) return directories;
     return directories.filter((directory) => !directory.name.startsWith("."));
   }, [directories, showHiddenFolders]);
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-dark/30 px-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
       }}
     >
-      <div className="flex w-full max-w-2xl flex-col rounded-xl border border-border bg-white shadow-2xl shadow-black/10">
+      <DialogContent className="max-w-2xl gap-0 p-0" showCloseButton={false}>
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
           <Folder size={14} className="text-muted-fg" />
-          <div className="text-sm font-semibold text-dark">Browse Folder</div>
+          <DialogTitle className="text-sm font-semibold text-dark">Browse Folder</DialogTitle>
+          <DialogDescription className="sr-only">
+            Browse directories and select a folder for workflow execution context.
+          </DialogDescription>
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="outline"
@@ -106,8 +101,8 @@ export function FolderBrowserModal({
 
         <div className="border-b border-border px-4 py-2">
           <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1 truncate text-[11px] text-ink" title={breadcrumb}>
-              {breadcrumb}
+            <div className="min-w-0 flex-1 truncate text-[11px] text-ink" title={currentPath}>
+              {currentPath}
             </div>
             <label className="flex items-center gap-1.5 text-[11px] text-ink">
               <Checkbox
@@ -173,7 +168,7 @@ export function FolderBrowserModal({
             Use This Folder
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
