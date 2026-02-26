@@ -93,9 +93,6 @@ export function FolderBrowserDialog({
               <RefreshCw size={11} />
               Refresh
             </Button>
-            <Button variant="outline" size="xs" onClick={onClose}>
-              Close
-            </Button>
           </div>
         </div>
 
@@ -155,6 +152,9 @@ export function FolderBrowserDialog({
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
           <Button
             variant="pink"
             size="sm"
