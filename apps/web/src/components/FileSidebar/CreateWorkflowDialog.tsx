@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 const DEFAULT_YAML = `name: "New Workflow"
 workflow:
@@ -10,12 +11,13 @@ workflow:
     prompt: "Please run: echo 'Hello from Agent Flow!', then report the output."
 `;
 
-interface CreateWorkflowModalProps {
+interface CreateWorkflowDialogProps {
+  open: boolean;
   onClose: () => void;
   onCreated: () => void;
 }
 
-export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalProps) {
+export function CreateWorkflowDialog({ open, onClose, onCreated }: CreateWorkflowDialogProps) {
   const [newName, setNewName] = useState("");
   const [newContent, setNewContent] = useState(DEFAULT_YAML);
   const [creating, setCreating] = useState(false);
@@ -52,16 +54,17 @@ export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalP
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-dark/30 px-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
       }}
     >
-      <div className="flex w-full max-w-2xl flex-col gap-4 rounded-xl border border-border bg-white p-6 shadow-2xl shadow-black/10">
-        <div className="text-sm font-semibold text-dark">Create New Workflow</div>
+      <DialogContent className="max-w-2xl gap-4" showCloseButton={false}>
+        <DialogTitle className="text-sm font-semibold text-dark">Create New Workflow</DialogTitle>
+        <DialogDescription className="sr-only">
+          Create a workflow file and initial YAML definition.
+        </DialogDescription>
 
         <label className="flex flex-col gap-1 text-[11px] text-ink">
           File name
@@ -95,7 +98,7 @@ export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalP
             {creating ? "Creating..." : "Create"}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

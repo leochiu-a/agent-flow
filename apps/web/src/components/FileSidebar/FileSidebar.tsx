@@ -8,7 +8,7 @@ import { ChevronRight, Folder, GitBranch, Plug, Trash2 } from "lucide-react";
 import type { LogLine } from "../WorkflowCanvas";
 import { formatDuration } from "../../utils/time";
 import { SidebarHeader } from "./SidebarHeader";
-import { CreateWorkflowModal } from "./CreateWorkflowModal";
+import { CreateWorkflowDialog } from "./CreateWorkflowDialog";
 import { FolderBrowserDialog } from "./FolderBrowserDialog";
 import { WorkflowItem } from "./WorkflowItem";
 import { SessionItem } from "./SessionItem";
@@ -436,15 +436,14 @@ export function FileSidebar({
         onSelectFolder={addFolder}
       />
 
-      {showCreate && (
-        <CreateWorkflowModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => {
-            setShowCreate(false);
-            void fetchFiles();
-          }}
-        />
-      )}
+      <CreateWorkflowDialog
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={() => {
+          setShowCreate(false);
+          void fetchFiles();
+        }}
+      />
     </aside>
   );
 }
