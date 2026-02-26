@@ -31,6 +31,7 @@ pnpm exec agent-flow run .ai-workflows/test-workflow.yaml
 
 ```yaml
 name: "My Workflow"
+claude_session: "shared"  # optional: share one Claude Code session across Claude steps
 workflow:
   - name: "Shell step"
     run: "echo 'Hello World'"
@@ -40,6 +41,10 @@ workflow:
     prompt: "Summarise the last git commit in one sentence"
     skip_permission: true   # passes --dangerously-skip-permissions to claude CLI
 ```
+
+`claude_session` modes:
+- `isolated` (default): each Claude step starts a fresh session
+- `shared`: later Claude steps reuse the previous Claude step session via `claude --resume <session_id>`
 
 ## Packages
 

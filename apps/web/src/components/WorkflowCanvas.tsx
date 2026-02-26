@@ -38,6 +38,15 @@ const nodeTypes = { step: StepNode };
 
 const newId = () => `step-${crypto.randomUUID().slice(0, 8)}`;
 
+function resolveClaudeSessionMode(
+  steps: WorkflowDefinition["workflow"],
+  existingMode?: WorkflowDefinition["claude_session"],
+): WorkflowDefinition["claude_session"] | undefined {
+  if (existingMode === "shared") return "shared";
+  const claudeStepCount = steps.filter((step) => step.agent === "claude").length;
+  return claudeStepCount > 1 ? "shared" : undefined;
+}
+
 export function WorkflowCanvas({
   onLinesChange,
   onRunningChange,
@@ -164,26 +173,33 @@ export function WorkflowCanvas({
     onLinesChange(() => []);
 
     const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
-    const definition = {
-      name: "Canvas Workflow",
-      workflow: sorted.map((node) => {
-        const d = node.data as StepNodeData;
+    const workflow: WorkflowDefinition["workflow"] = sorted.map((node) => {
+      const d = node.data as StepNodeData;
 
-        if (d.type === "claude") {
-          return {
-            name: d.title || "Claude Step",
-            agent: "claude",
-            prompt: d.prompt || "",
-            skip_permission: d.skipPermission ?? false,
-          };
-        }
-
+      if (d.type === "claude") {
         return {
-          name: d.title || "Shell Step",
-          run: d.prompt || "",
+          name: d.title || "Claude Step",
+          agent: "claude",
+          prompt: d.prompt || "",
+          skip_permission: d.skipPermission ?? false,
         };
-      }),
+      }
+
+      return {
+        name: d.title || "Shell Step",
+        run: d.prompt || "",
+      };
+    });
+
+    const definition: WorkflowDefinition = {
+      name: "Canvas Workflow",
+      workflow,
     };
+    const claudeSessionMode = resolveClaudeSessionMode(
+      workflow,
+      workflowDefinition?.claude_session,
+    );
+    if (claudeSessionMode) definition.claude_session = claudeSessionMode;
 
     try {
       const res = await fetch("/api/workflow/run-definition", {
@@ -248,7 +264,7 @@ export function WorkflowCanvas({
       setRunning(false);
       onRunningChange(false);
     }
-  }, [onLinesChange, onRunningChange, running]);
+  }, [onLinesChange, onRunningChange, running, workflowDefinition?.claude_session]);
 
   const handleModalSave = useCallback(
     async (id: string, title: string, prompt: string, skipPermission: boolean) => {
@@ -293,6 +309,11 @@ export function WorkflowCanvas({
           return { name: d.title || "Shell Step", run: d.prompt || "" };
         }),
       };
+      const claudeSessionMode = resolveClaudeSessionMode(
+        definition.workflow,
+        workflowDefinition?.claude_session,
+      );
+      if (claudeSessionMode) definition.claude_session = claudeSessionMode;
 
       try {
         const res = await fetch("/api/workflow/create", {
@@ -323,7 +344,7 @@ export function WorkflowCanvas({
         setIsModalSaving(false);
       }
     },
-    [isModalSaving, selectedFile, onSave],
+    [isModalSaving, selectedFile, onSave, workflowDefinition?.claude_session],
   );
 
   const editingNode = editingStepId ? nodes.find((n) => n.id === editingStepId) : null;

@@ -8,6 +8,7 @@ import type {
   LogEntry,
   WorkflowResult,
   StepResult,
+  ClaudeSessionMode,
 } from "./types";
 
 export interface RunnerOptions {
@@ -17,6 +18,8 @@ export interface RunnerOptions {
 export class WorkflowRunner extends EventEmitter {
   private aborted = false;
   private spawnEnv: NodeJS.ProcessEnv;
+  private claudeSessionMode: ClaudeSessionMode = "isolated";
+  private lastClaudeSessionId: string | null = null;
 
   constructor(options: RunnerOptions = {}) {
     super();
@@ -47,6 +50,8 @@ export class WorkflowRunner extends EventEmitter {
   }
 
   async run(definition: WorkflowDefinition): Promise<WorkflowResult> {
+    this.claudeSessionMode = definition.claude_session ?? "isolated";
+    this.lastClaudeSessionId = null;
     this.log("info", `Starting workflow: ${definition.name}`);
     const stepResults: StepResult[] = [];
 
@@ -99,6 +104,10 @@ export class WorkflowRunner extends EventEmitter {
       this.log("info", `Running Claude agent: ${step.name}`, step.name);
       const args: string[] = [];
       if (step.skip_permission) args.push("--dangerously-skip-permissions");
+      if (this.claudeSessionMode === "shared" && this.lastClaudeSessionId) {
+        args.push("--resume", this.lastClaudeSessionId);
+        this.log("info", `Resuming Claude session: ${this.lastClaudeSessionId}`, step.name);
+      }
       args.push("--output-format", "stream-json", "--verbose");
       if (step.prompt) args.push("--print", step.prompt);
 
@@ -107,6 +116,7 @@ export class WorkflowRunner extends EventEmitter {
         env: this.spawnEnv,
       });
 
+      let stepSessionId = this.lastClaudeSessionId;
       let buffer = "";
       child.stdout.on("data", (chunk: Buffer) => {
         buffer += chunk.toString();
@@ -115,7 +125,9 @@ export class WorkflowRunner extends EventEmitter {
         for (const line of lines) {
           if (!line.trim()) continue;
           try {
-            this.handleClaudeEvent(JSON.parse(line), step.name);
+            const event = JSON.parse(line) as Record<string, unknown>;
+            stepSessionId = this.extractClaudeSessionId(event) ?? stepSessionId;
+            this.handleClaudeEvent(event, step.name);
           } catch {
             this.log("stdout", line, step.name);
           }
@@ -127,10 +139,15 @@ export class WorkflowRunner extends EventEmitter {
       child.on("close", (code) => {
         if (buffer.trim()) {
           try {
-            this.handleClaudeEvent(JSON.parse(buffer), step.name);
+            const event = JSON.parse(buffer) as Record<string, unknown>;
+            stepSessionId = this.extractClaudeSessionId(event) ?? stepSessionId;
+            this.handleClaudeEvent(event, step.name);
           } catch {
             this.log("stdout", buffer, step.name);
           }
+        }
+        if (this.claudeSessionMode === "shared" && stepSessionId && code === 0) {
+          this.lastClaudeSessionId = stepSessionId;
         }
         resolve({ name: step.name, success: code === 0, exitCode: code });
       });
@@ -172,6 +189,10 @@ export class WorkflowRunner extends EventEmitter {
         break;
       }
     }
+  }
+
+  private extractClaudeSessionId(event: Record<string, unknown>): string | null {
+    return typeof event.session_id === "string" && event.session_id ? event.session_id : null;
   }
 
   abort(): void {

@@ -6,8 +6,11 @@ export interface WorkflowStep {
   skip_permission?: boolean;
 }
 
+export type ClaudeSessionMode = "isolated" | "shared";
+
 export interface WorkflowDefinition {
   name: string;
+  claude_session?: ClaudeSessionMode;
   workflow: WorkflowStep[];
 }
 
