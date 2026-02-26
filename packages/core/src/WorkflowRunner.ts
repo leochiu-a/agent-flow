@@ -73,30 +73,17 @@ export class WorkflowRunner extends EventEmitter {
   }
 
   private runStep(step: WorkflowStep): Promise<StepResult> {
-    if (step.agent === "claude") return this.runClaudeStep(step);
-    if (step.run) return this.runShellStep(step);
-    return Promise.resolve({ name: step.name, success: false, exitCode: null });
-  }
+    if (step.agent !== "claude") {
+      this.log("error", `Unsupported agent: ${String(step.agent)}`, step.name);
+      return Promise.resolve({ name: step.name, success: false, exitCode: null });
+    }
 
-  private runShellStep(step: WorkflowStep): Promise<StepResult> {
-    return new Promise((resolve) => {
-      this.log("info", `Running: ${step.run}`, step.name);
-      const child = spawn("sh", ["-c", step.run!], { stdio: "pipe", env: this.spawnEnv });
+    if (!step.prompt?.trim()) {
+      this.log("error", "Claude prompt is required.", step.name);
+      return Promise.resolve({ name: step.name, success: false, exitCode: null });
+    }
 
-      child.stdout.on("data", (chunk: Buffer) => {
-        this.log("stdout", chunk.toString(), step.name);
-      });
-      child.stderr.on("data", (chunk: Buffer) => {
-        this.log("stderr", chunk.toString(), step.name);
-      });
-      child.on("close", (code) => {
-        resolve({ name: step.name, success: code === 0, exitCode: code });
-      });
-      child.on("error", (err) => {
-        this.log("error", `Spawn error: ${err.message}`, step.name);
-        resolve({ name: step.name, success: false, exitCode: null });
-      });
-    });
+    return this.runClaudeStep(step);
   }
 
   private runClaudeStep(step: WorkflowStep): Promise<StepResult> {
@@ -109,7 +96,7 @@ export class WorkflowRunner extends EventEmitter {
         this.log("info", `Resuming Claude session: ${this.lastClaudeSessionId}`, step.name);
       }
       args.push("--output-format", "stream-json", "--verbose");
-      if (step.prompt) args.push("--print", step.prompt);
+      args.push("--print", step.prompt);
 
       const child = spawn("claude", args, {
         stdio: ["ignore", "pipe", "pipe"],

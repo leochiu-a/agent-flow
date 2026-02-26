@@ -4,8 +4,9 @@ import { useState } from "react";
 
 const DEFAULT_YAML = `name: "New Workflow"
 workflow:
-  - name: "Hello World"
-    run: "echo 'Hello from Agent Flow!'"
+  - name: "Hello World via Claude"
+    agent: claude
+    prompt: "Please run: echo 'Hello from Agent Flow!', then report the output."
 `;
 
 interface CreateWorkflowModalProps {

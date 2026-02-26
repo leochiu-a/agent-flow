@@ -1,12 +1,16 @@
 name: test-workflow
+claude_session: shared
 workflow:
   - name: List project structure
-    run: >-
-      find . -name '*.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' |
-      head -20
+    agent: claude
+    prompt: >-
+      Please run:
+      find . -name '*.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' | head -20
+      Then summarize the key points in under 10 lines.
+    skip_permission: true
   - name: Analyze code
     agent: claude
     prompt: >-
       Read the file packages/core/src/WorkflowRunner.ts and explain its
-      architecture and main responsibilities.
+      architecture and main responsibilities, based on the previous step output.
     skip_permission: true

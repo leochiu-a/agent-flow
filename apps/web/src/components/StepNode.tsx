@@ -1,11 +1,11 @@
 "use client";
 
-import { Bot, Pencil, Terminal, X } from "lucide-react";
+import { Bot, Pencil, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
 export interface StepNodeData {
   title: string;
-  type: "claude" | "shell";
+  type: "claude";
   prompt: string;
   skipPermission?: boolean;
   onRequestEdit: (id: string) => void;
@@ -15,21 +15,12 @@ export interface StepNodeData {
 
 export function StepNode({ id, data, selected }: NodeProps) {
   const d = data as StepNodeData;
-  const isAgent = d.type === "claude";
-
-  const tone = isAgent
-    ? {
-        card: "bg-white border-pink/40",
-        focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
-        badge: "bg-pink/10 text-pink border border-pink/30",
-        editHover: "hover:text-pink",
-      }
-    : {
-        card: "bg-white border-orange/40",
-        focus: "border-orange shadow-[0_0_0_1px_rgba(234,50,13,0.6),0_0_24px_rgba(234,50,13,0.12)]",
-        badge: "bg-orange/10 text-orange border border-orange/30",
-        editHover: "hover:text-orange",
-      };
+  const tone = {
+    card: "bg-white border-pink/40",
+    focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
+    badge: "bg-pink/10 text-pink border border-pink/30",
+    editHover: "hover:text-pink",
+  };
 
   const rawPreview = d.prompt.replace(/\n/g, " ").trim();
   const preview = rawPreview.length > 80 ? `${rawPreview.slice(0, 80)}…` : rawPreview;
@@ -54,8 +45,8 @@ export function StepNode({ id, data, selected }: NodeProps) {
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
         >
-          {isAgent ? <Bot size={10} /> : <Terminal size={10} />}
-          {isAgent ? "Claude" : "Shell"}
+          <Bot size={10} />
+          Claude
         </span>
 
         <div className="ml-auto flex items-center gap-1">
@@ -83,16 +74,14 @@ export function StepNode({ id, data, selected }: NodeProps) {
         {d.title || <span className="text-placeholder">Untitled step</span>}
       </div>
 
-      {/* Prompt / command preview */}
+      {/* Prompt preview */}
       {preview ? (
         <div className="break-all font-mono text-[11px] leading-relaxed text-muted-fg">
           {preview}
         </div>
       ) : (
         <div className="font-mono text-[11px] italic text-placeholder">
-          {isAgent
-            ? "No prompt yet — click the edit button"
-            : "No command yet — click the edit button"}
+          No prompt yet — click the edit button
         </div>
       )}
 

@@ -6,55 +6,113 @@ import { test } from "vitest";
 import { WorkflowRunner } from "./WorkflowRunner";
 import type { LogEntry, WorkflowDefinition } from "./types";
 
-test("runs shell workflow successfully and emits logs", async () => {
-  const runner = new WorkflowRunner();
-  const logs: LogEntry[] = [];
-  runner.on("log", (entry) => logs.push(entry));
+async function createMockClaudeBinary(tmpDir: string): Promise<void> {
+  const claudePath = path.join(tmpDir, "claude");
+  await writeFile(
+    claudePath,
+    `#!/bin/sh
+prev=""
+prompt=""
+resume=""
+for arg in "$@"; do
+  if [ -n "$CLAUDE_ARGS_LOG" ]; then
+    printf '%s\\n' "$arg" >> "$CLAUDE_ARGS_LOG"
+  fi
+  if [ "$prev" = "--print" ]; then
+    prompt="$arg"
+  fi
+  if [ "$prev" = "--resume" ]; then
+    resume="$arg"
+  fi
+  prev="$arg"
+done
+if [ -n "$CLAUDE_ARGS_LOG" ]; then
+  printf '__END__\\n' >> "$CLAUDE_ARGS_LOG"
+fi
+if [ "$prompt" = "__FAIL__" ]; then
+  printf '{"type":"assistant","message":{"content":[{"type":"text","text":"mock-fail"}]}}\\n'
+  exit 2
+fi
+sid="\${resume:-session-1}"
+printf '{"type":"assistant","message":{"content":[{"type":"text","text":"mock-ok"}]},"session_id":"%s"}\\n' "$sid"
+printf '{"type":"result","total_cost_usd":0,"session_id":"%s"}\\n' "$sid"
+`,
+    "utf-8",
+  );
+  await chmod(claudePath, 0o755);
+}
 
-  const definition: WorkflowDefinition = {
-    name: "shell-success",
-    workflow: [
-      { name: "one", run: "printf 'alpha'" },
-      { name: "two", run: "printf 'beta'" },
-    ],
-  };
+test("runs Claude workflow successfully and emits logs", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-claude-success-"));
+  await createMockClaudeBinary(tmpDir);
 
-  const result = await runner.run(definition);
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+      },
+    });
+    const logs: LogEntry[] = [];
+    runner.on("log", (entry) => logs.push(entry));
 
-  assert.equal(result.success, true);
-  assert.equal(result.steps.length, 2);
-  assert.equal(result.steps[0]?.success, true);
-  assert.equal(result.steps[1]?.success, true);
-  assert.ok(logs.some((entry) => entry.message.includes("Starting workflow: shell-success")));
-  assert.ok(logs.some((entry) => entry.level === "stdout" && entry.message.includes("alpha")));
+    const definition: WorkflowDefinition = {
+      name: "claude-success",
+      workflow: [
+        { name: "one", agent: "claude", prompt: "step one" },
+        { name: "two", agent: "claude", prompt: "step two" },
+      ],
+    };
+
+    const result = await runner.run(definition);
+
+    assert.equal(result.success, true);
+    assert.equal(result.steps.length, 2);
+    assert.equal(result.steps[0]?.success, true);
+    assert.equal(result.steps[1]?.success, true);
+    assert.ok(logs.some((entry) => entry.message.includes("Starting workflow: claude-success")));
+    assert.ok(logs.some((entry) => entry.level === "stdout" && entry.message.includes("mock-ok")));
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
 });
 
-test("stops after the first failed step", async () => {
-  const runner = new WorkflowRunner();
+test("stops after the first failed Claude step", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-claude-stop-on-fail-"));
+  await createMockClaudeBinary(tmpDir);
 
-  const definition: WorkflowDefinition = {
-    name: "stop-on-fail",
-    workflow: [
-      { name: "ok", run: "printf 'ok'" },
-      { name: "boom", run: "exit 2" },
-      { name: "never", run: "printf 'should-not-run'" },
-    ],
-  };
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+      },
+    });
 
-  const result = await runner.run(definition);
+    const definition: WorkflowDefinition = {
+      name: "stop-on-fail",
+      workflow: [
+        { name: "ok", agent: "claude", prompt: "ok" },
+        { name: "boom", agent: "claude", prompt: "__FAIL__" },
+        { name: "never", agent: "claude", prompt: "should-not-run" },
+      ],
+    };
 
-  assert.equal(result.success, false);
-  assert.equal(result.steps.length, 2);
-  assert.equal(result.steps[0]?.success, true);
-  assert.equal(result.steps[1]?.success, false);
-  assert.equal(result.steps[1]?.exitCode, 2);
+    const result = await runner.run(definition);
+
+    assert.equal(result.success, false);
+    assert.equal(result.steps.length, 2);
+    assert.equal(result.steps[0]?.success, true);
+    assert.equal(result.steps[1]?.success, false);
+    assert.equal(result.steps[1]?.exitCode, 2);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
 });
 
-test("marks unsupported step as failed", async () => {
+test("marks empty Claude prompt as failed", async () => {
   const runner = new WorkflowRunner();
   const result = await runner.run({
     name: "invalid-step",
-    workflow: [{ name: "unknown-step" }],
+    workflow: [{ name: "unknown-step", agent: "claude", prompt: "" }],
   });
 
   assert.equal(result.success, false);
@@ -68,7 +126,7 @@ test("abort before run prevents any step execution", async () => {
 
   const result = await runner.run({
     name: "aborted",
-    workflow: [{ name: "should-not-run", run: "printf 'x'" }],
+    workflow: [{ name: "should-not-run", agent: "claude", prompt: "x" }],
   });
 
   assert.equal(result.success, false);
@@ -189,6 +247,7 @@ printf '{"type":"result","total_cost_usd":0,"session_id":"session-1"}\\n'
 
 test("runFile loads YAML definition and executes it", async () => {
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-runfile-"));
+  await createMockClaudeBinary(tmpDir);
   const filePath = path.join(tmpDir, "workflow.yaml");
   await writeFile(
     filePath,
@@ -196,13 +255,18 @@ test("runFile loads YAML definition and executes it", async () => {
 name: "from-file"
 workflow:
   - name: "file-step"
-    run: "printf 'from-yaml'"
+    agent: claude
+    prompt: "from-yaml"
 `,
     "utf-8",
   );
 
   try {
-    const runner = new WorkflowRunner();
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+      },
+    });
     const result = await runner.runFile(filePath);
 
     assert.equal(result.success, true);

@@ -1,8 +1,7 @@
 export interface WorkflowStep {
   name: string;
-  run?: string;
-  agent?: "claude";
-  prompt?: string;
+  agent: "claude";
+  prompt: string;
   skip_permission?: boolean;
 }
 

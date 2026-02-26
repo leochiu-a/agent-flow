@@ -2,11 +2,9 @@
 
 import { useCallback, useEffect } from "react";
 import { ClaudeStepModal } from "./ClaudeStepModal";
-import { ShellStepModal } from "./ShellStepModal";
 
 interface StepEditModalProps {
   stepId: string;
-  stepType: "claude" | "shell";
   initialTitle: string;
   initialPrompt: string;
   initialSkipPermission?: boolean;
@@ -18,7 +16,6 @@ interface StepEditModalProps {
 
 export function StepEditModal({
   stepId,
-  stepType,
   initialTitle,
   initialPrompt,
   initialSkipPermission,
@@ -50,26 +47,15 @@ export function StepEditModal({
       }}
     >
       <div className="flex w-full max-w-2xl flex-col gap-4 rounded-xl border border-border bg-white p-6 shadow-2xl shadow-black/10">
-        {stepType === "claude" ? (
-          <ClaudeStepModal
-            initialTitle={initialTitle}
-            initialPrompt={initialPrompt}
-            initialSkipPermission={initialSkipPermission}
-            saving={saving}
-            error={error}
-            onSave={handleSave}
-            onCancel={onClose}
-          />
-        ) : (
-          <ShellStepModal
-            initialTitle={initialTitle}
-            initialCommand={initialPrompt}
-            saving={saving}
-            error={error}
-            onSave={handleSave}
-            onCancel={onClose}
-          />
-        )}
+        <ClaudeStepModal
+          initialTitle={initialTitle}
+          initialPrompt={initialPrompt}
+          initialSkipPermission={initialSkipPermission}
+          saving={saving}
+          error={error}
+          onSave={handleSave}
+          onCancel={onClose}
+        />
       </div>
     </div>
   );

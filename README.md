@@ -1,6 +1,6 @@
 # Agent Flow
 
-A local AI workflow engine — run YAML-defined workflows that mix shell commands and Claude AI agents.
+A local AI workflow engine — run YAML-defined workflows with Claude AI agents.
 
 ## Monorepo Structure
 
@@ -33,12 +33,9 @@ pnpm exec agent-flow run .ai-workflows/test-workflow.yaml
 name: "My Workflow"
 claude_session: "shared"  # optional: share one Claude Code session across Claude steps
 workflow:
-  - name: "Shell step"
-    run: "echo 'Hello World'"
-
   - name: "Claude AI step"
     agent: claude
-    prompt: "Summarise the last git commit in one sentence"
+    prompt: "Run `echo Hello World`, then summarize the latest git commit."
     skip_permission: true   # passes --dangerously-skip-permissions to claude CLI
 ```
 
@@ -50,7 +47,7 @@ workflow:
 
 ### `@agent-flow/core`
 
-Pure Node.js engine. Reads YAML, spawns processes, emits `log` and `done` events via `EventEmitter`.
+Pure Node.js engine. Reads YAML, runs Claude CLI, emits `log` and `done` events via `EventEmitter`.
 
 ```ts
 import { WorkflowRunner } from "@agent-flow/core";

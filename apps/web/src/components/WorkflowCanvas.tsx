@@ -92,9 +92,9 @@ export function WorkflowCanvas({
         position: { x: 60 + i * 340, y: 120 },
         data: {
           title: step.name,
-          type: step.agent === "claude" ? "claude" : "shell",
-          prompt: step.agent === "claude" ? (step.prompt ?? "") : (step.run ?? ""),
-          skipPermission: step.agent === "claude" ? (step.skip_permission ?? false) : false,
+          type: "claude",
+          prompt: step.prompt ?? "",
+          skipPermission: step.skip_permission ?? false,
           onRequestEdit,
           onDelete,
         },
@@ -113,43 +113,41 @@ export function WorkflowCanvas({
     setEdges(newEdges);
   }, [workflowDefinition, onRequestEdit, onDelete, setNodes, setEdges]);
 
-  const addNode = useCallback(
-    (type: "claude" | "shell") => {
-      const id = newId();
-      const lastNode = nodesRef.current[nodesRef.current.length - 1];
-      const x = lastNode ? lastNode.position.x + 340 : 60;
-      const y = lastNode ? lastNode.position.y : 120;
+  const addNode = useCallback(() => {
+    const id = newId();
+    const lastNode = nodesRef.current[nodesRef.current.length - 1];
+    const x = lastNode ? lastNode.position.x + 340 : 60;
+    const y = lastNode ? lastNode.position.y : 120;
 
-      const newNode: Node = {
-        id,
-        type: "step",
-        position: { x, y },
-        data: {
-          title: type === "claude" ? "Claude Step" : "Shell Step",
-          type,
-          prompt: "",
-          onRequestEdit,
-          onDelete,
+    const newNode: Node = {
+      id,
+      type: "step",
+      position: { x, y },
+      data: {
+        title: "Claude Step",
+        type: "claude",
+        prompt: "",
+        skipPermission: false,
+        onRequestEdit,
+        onDelete,
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+
+    if (lastNode) {
+      setEdgesRef.current((eds) => [
+        ...eds,
+        {
+          id: `e-${lastNode.id}-${id}`,
+          source: lastNode.id,
+          target: id,
+          animated: true,
+          style: { stroke: "var(--color-pink)", strokeWidth: 2 },
         },
-      };
-
-      setNodes((nds) => [...nds, newNode]);
-
-      if (lastNode) {
-        setEdgesRef.current((eds) => [
-          ...eds,
-          {
-            id: `e-${lastNode.id}-${id}`,
-            source: lastNode.id,
-            target: id,
-            animated: true,
-            style: { stroke: "var(--color-pink)", strokeWidth: 2 },
-          },
-        ]);
-      }
-    },
-    [onDelete, onRequestEdit, setNodes],
-  );
+      ]);
+    }
+  }, [onDelete, onRequestEdit, setNodes]);
 
   const onConnect = useCallback(
     (connection: Connection) =>
@@ -175,19 +173,11 @@ export function WorkflowCanvas({
     const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
     const workflow: WorkflowDefinition["workflow"] = sorted.map((node) => {
       const d = node.data as StepNodeData;
-
-      if (d.type === "claude") {
-        return {
-          name: d.title || "Claude Step",
-          agent: "claude",
-          prompt: d.prompt || "",
-          skip_permission: d.skipPermission ?? false,
-        };
-      }
-
       return {
-        name: d.title || "Shell Step",
-        run: d.prompt || "",
+        name: d.title || "Claude Step",
+        agent: "claude",
+        prompt: d.prompt || "",
+        skip_permission: d.skipPermission ?? false,
       };
     });
 
@@ -298,15 +288,12 @@ export function WorkflowCanvas({
         name: selectedFile.replace(/\.ya?ml$/, ""),
         workflow: sorted.map((node) => {
           const d = node.data as StepNodeData;
-          if (d.type === "claude") {
-            return {
-              name: d.title || "Claude Step",
-              agent: "claude",
-              prompt: d.prompt || "",
-              skip_permission: d.skipPermission ?? false,
-            };
-          }
-          return { name: d.title || "Shell Step", run: d.prompt || "" };
+          return {
+            name: d.title || "Claude Step",
+            agent: "claude",
+            prompt: d.prompt || "",
+            skip_permission: d.skipPermission ?? false,
+          };
         }),
       };
       const claudeSessionMode = resolveClaudeSessionMode(
@@ -353,19 +340,11 @@ export function WorkflowCanvas({
     <div className="relative h-full w-full">
       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
         <ToolbarButton
-          onClick={() => addNode("claude")}
+          onClick={addNode}
           disabled={running}
           className="bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
         >
           + Claude Agent
-        </ToolbarButton>
-
-        <ToolbarButton
-          onClick={() => addNode("shell")}
-          disabled={running}
-          className="bg-orange hover:bg-orange/90 disabled:bg-disabled disabled:text-muted-fg"
-        >
-          + Shell Step
         </ToolbarButton>
 
         <div className="mx-1 h-6 w-px bg-border" />
@@ -459,7 +438,6 @@ export function WorkflowCanvas({
       {editingNode && (
         <StepEditModal
           stepId={editingStepId!}
-          stepType={(editingNode.data as StepNodeData).type}
           initialTitle={(editingNode.data as StepNodeData).title}
           initialPrompt={(editingNode.data as StepNodeData).prompt}
           initialSkipPermission={(editingNode.data as StepNodeData).skipPermission}
