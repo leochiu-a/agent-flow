@@ -39,7 +39,7 @@ export function WorkflowItem({
         className={`flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
           isSelected
             ? "border-pink bg-pink-subtle text-dark"
-            : "border-transparent text-secondary hover:bg-surface hover:text-dark"
+            : "border-transparent text-ink hover:bg-surface hover:text-dark"
         }`}
       >
         {/* Expand arrow */}

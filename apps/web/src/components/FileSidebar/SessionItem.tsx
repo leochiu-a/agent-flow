@@ -36,7 +36,7 @@ export function SessionItem({
       />
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[10px] text-secondary">{formatTime(session.startedAt)}</div>
+        <div className="truncate text-[10px] text-ink">{formatTime(session.startedAt)}</div>
         <div className="text-[9px] text-muted-fg">{formatDuration(session.durationMs)}</div>
       </div>
 

@@ -375,7 +375,7 @@ export function WorkflowCanvas({
           <span
             className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
               saveStatus === "saving"
-                ? "bg-disabled text-secondary"
+                ? "bg-disabled text-ink"
                 : saveStatus === "saved"
                   ? "border border-orange/30 bg-orange/10 text-orange"
                   : "border border-pink/30 bg-pink/10 text-pink"

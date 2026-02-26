@@ -20,9 +20,9 @@ interface SlackOAuthConfigPublic {
 function StatusBadge({ status }: { status: ConnectorRecord["status"] }) {
   const styles = {
     connected: "bg-pink/10 text-pink border border-pink/30",
-    disconnected: "bg-disabled text-secondary border border-border",
+    disconnected: "bg-disabled text-ink border border-border",
     error: "bg-orange/10 text-orange border border-orange/30",
-    connecting: "bg-disabled text-secondary border border-border",
+    connecting: "bg-disabled text-ink border border-border",
   };
   return (
     <span
@@ -209,7 +209,7 @@ export default function ConnectorsPage() {
                       type="button"
                       onClick={() => void handleTest(c.id)}
                       disabled={testingId === c.id || c.status === "disconnected"}
-                      className="rounded-md border border-border px-2.5 py-1 text-[11px] text-secondary transition hover:border-pink hover:text-pink disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {testingId === c.id ? "Testing…" : "Test"}
                     </button>
@@ -217,7 +217,7 @@ export default function ConnectorsPage() {
                       type="button"
                       onClick={() => void handleDisconnect(c.id)}
                       disabled={disconnectingId === c.id || c.status === "disconnected"}
-                      className="rounded-md border border-border px-2.5 py-1 text-[11px] text-secondary transition hover:border-orange hover:text-orange disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-orange hover:text-orange disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {disconnectingId === c.id ? "…" : "Disconnect"}
                     </button>
@@ -243,7 +243,7 @@ export default function ConnectorsPage() {
           </div>
 
           {/* Step 1: create app */}
-          <ol className="mb-5 space-y-2 text-[11px] text-secondary">
+          <ol className="mb-5 space-y-2 text-[11px] text-ink">
             <li className="flex gap-2">
               <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
                 1
@@ -323,7 +323,7 @@ export default function ConnectorsPage() {
                     setShowConfigure(false);
                     setCfgError(null);
                   }}
-                  className="w-full rounded-md border border-border py-1.5 text-xs font-semibold text-secondary transition hover:border-pink hover:text-pink"
+                  className="w-full rounded-md border border-border py-1.5 text-xs font-semibold text-ink transition hover:border-pink hover:text-pink"
                 >
                   Cancel
                 </button>
@@ -346,14 +346,14 @@ export default function ConnectorsPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfigure(true)}
-                  className="rounded-md border border-border px-3 py-1.5 text-[11px] text-secondary transition hover:border-pink hover:text-pink"
+                  className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-pink hover:text-pink"
                 >
                   Reconfigure
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleRemoveConfig()}
-                  className="rounded-md border border-border px-3 py-1.5 text-[11px] text-secondary transition hover:border-orange hover:text-orange"
+                  className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-orange hover:text-orange"
                 >
                   Remove credentials
                 </button>
@@ -363,7 +363,7 @@ export default function ConnectorsPage() {
         </div>
 
         {/* Info */}
-        <div className="mt-6 rounded-lg border border-border bg-surface px-4 py-3 text-[11px] text-secondary">
+        <div className="mt-6 rounded-lg border border-border bg-surface px-4 py-3 text-[11px] text-ink">
           <div className="font-semibold text-dark">How it works</div>
           <div className="mt-1 leading-relaxed">
             After authorization, the token is written to{" "}

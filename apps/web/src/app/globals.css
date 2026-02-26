@@ -109,8 +109,8 @@ body {
 .react-flow__controls-button {
   background: #FFFFFF !important;
   border-color: var(--color-border) !important;
-  color: var(--color-secondary) !important;
-  fill: var(--color-secondary) !important;
+  color: var(--color-ink) !important;
+  fill: var(--color-ink) !important;
 }
 
 .react-flow__controls-button:hover {

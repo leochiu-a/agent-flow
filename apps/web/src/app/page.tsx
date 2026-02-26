@@ -58,14 +58,14 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setShowTerminal(true)}
-              className="rounded-md border border-border px-2.5 py-1 text-[11px] text-secondary transition hover:border-pink hover:text-pink"
+              className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink"
             >
               Show Output
             </button>
           )}
           <Link
             href="/connectors"
-            className="rounded-md border border-border px-2.5 py-1 text-[11px] text-secondary transition hover:border-pink hover:text-pink"
+            className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink"
           >
             Connectors
           </Link>

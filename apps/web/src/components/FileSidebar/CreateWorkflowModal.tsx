@@ -61,7 +61,7 @@ export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalP
       <div className="flex w-full max-w-2xl flex-col gap-4 rounded-xl border border-border bg-white p-6 shadow-2xl shadow-black/10">
         <div className="text-sm font-semibold text-dark">Create New Workflow</div>
 
-        <label className="flex flex-col gap-1 text-[11px] text-secondary">
+        <label className="flex flex-col gap-1 text-[11px] text-ink">
           File name
           <input
             autoFocus
@@ -72,7 +72,7 @@ export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalP
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-[11px] text-secondary">
+        <label className="flex flex-col gap-1 text-[11px] text-ink">
           YAML content
           <textarea
             value={newContent}
@@ -88,7 +88,7 @@ export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalP
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-1.5 text-xs text-secondary transition hover:border-muted-fg hover:text-dark"
+            className="rounded-md border border-border px-3 py-1.5 text-xs text-ink transition hover:border-muted-fg hover:text-dark"
           >
             Cancel
           </button>
