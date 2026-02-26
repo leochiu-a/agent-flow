@@ -299,136 +299,140 @@ export default function ConnectorsPage() {
             </div>
           )}
 
-          {/* Slack connect panel */}
-          <div className="rounded-lg border border-border bg-white px-5 py-5 shadow-sm">
-            <div className="mb-5 flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                <path
-                  d="M6 15a2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2h2v2zm1 0a2 2 0 0 1 2-2 2 2 0 0 1 2 2v5a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-5zm2-9a2 2 0 0 1-2-2 2 2 0 0 1 2-2 2 2 0 0 1 2 2v2H9zm0 1a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1 2-2h5zm9 2a2 2 0 0 1 2-2 2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2v-2zm-1 0a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2 2 2 0 0 1 2 2v5zm-2 9a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2h2zm0-1a2 2 0 0 1-2-2 2 2 0 0 1 2-2h5a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-5z"
-                  fill="#E01E5A"
-                />
-              </svg>
-              <span className="text-sm font-bold text-dark">
-                {hasSlackConnected ? "Connect another Slack workspace" : "Connect Slack"}
-              </span>
-            </div>
+          {/* Slack connect panel — only shown when no active connection */}
+          {!hasSlackConnected && (
+            <div className="rounded-lg border border-border bg-white px-5 py-5 shadow-sm">
+              <div className="mb-5 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                  <path
+                    d="M6 15a2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2h2v2zm1 0a2 2 0 0 1 2-2 2 2 0 0 1 2 2v5a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-5zm2-9a2 2 0 0 1-2-2 2 2 0 0 1 2-2 2 2 0 0 1 2 2v2H9zm0 1a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1 2-2h5zm9 2a2 2 0 0 1 2-2 2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2v-2zm-1 0a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2 2 2 0 0 1 2 2v5zm-2 9a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2h2zm0-1a2 2 0 0 1-2-2 2 2 0 0 1 2-2h5a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-5z"
+                    fill="#E01E5A"
+                  />
+                </svg>
+                <span className="text-sm font-bold text-dark">
+                  {hasSlackConnected ? "Connect another Slack workspace" : "Connect Slack"}
+                </span>
+              </div>
 
-            <ol className="mb-5 space-y-2 text-[11px] text-ink">
-              <li className="flex gap-2">
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
-                  1
-                </span>
-                <span>
-                  <a
-                    href="https://api.slack.com/apps?new_app=1"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-pink underline underline-offset-2 hover:opacity-80"
-                  >
-                    Create a Slack App
-                  </a>{" "}
-                  at api.slack.com, then copy its{" "}
-                  <code className="rounded bg-disabled px-1 text-dark">Client ID</code> and{" "}
-                  <code className="rounded bg-disabled px-1 text-dark">Client Secret</code>.
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
-                  2
-                </span>
-                <span>
-                  Enter your credentials below, then click{" "}
-                  <strong className="text-dark">Connect with Slack</strong> to authorize via OAuth.
-                </span>
-              </li>
-            </ol>
+              <ol className="mb-5 space-y-2 text-[11px] text-ink">
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
+                    1
+                  </span>
+                  <span>
+                    <a
+                      href="https://api.slack.com/apps?new_app=1"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-pink underline underline-offset-2 hover:opacity-80"
+                    >
+                      Create a Slack App
+                    </a>{" "}
+                    at api.slack.com, then copy its{" "}
+                    <code className="rounded bg-disabled px-1 text-dark">Client ID</code> and{" "}
+                    <code className="rounded bg-disabled px-1 text-dark">Client Secret</code>.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-pink/10 text-[9px] font-bold text-pink">
+                    2
+                  </span>
+                  <span>
+                    Enter your credentials below, then click{" "}
+                    <strong className="text-dark">Connect with Slack</strong> to authorize via
+                    OAuth.
+                  </span>
+                </li>
+              </ol>
 
-            {!slackOauthConfig?.configured || showSlackConfigure ? (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={slackClientId}
-                  onChange={(e) => setSlackClientId(e.target.value)}
-                  placeholder="Client ID"
-                  className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
-                />
-                <input
-                  type="password"
-                  value={slackClientSecret}
-                  onChange={(e) => setSlackClientSecret(e.target.value)}
-                  placeholder="Client Secret"
-                  className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
-                />
-                <input
-                  type="text"
-                  value={slackRedirectUri}
-                  onChange={(e) => setSlackRedirectUri(e.target.value)}
-                  placeholder="Redirect URI"
-                  className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 font-mono text-[10px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
-                />
-                <div className="text-[10px] leading-relaxed text-muted-fg">
-                  Add the Redirect URI above to your Slack App under{" "}
-                  <span className="text-dark">OAuth &amp; Permissions → Redirect URLs</span>.
-                </div>
-                {slackOauthConfig?.configured && showSlackConfigure && (
+              {!slackOauthConfig?.configured || showSlackConfigure ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={slackClientId}
+                    onChange={(e) => setSlackClientId(e.target.value)}
+                    placeholder="Client ID"
+                    className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
+                  />
+                  <input
+                    type="password"
+                    value={slackClientSecret}
+                    onChange={(e) => setSlackClientSecret(e.target.value)}
+                    placeholder="Client Secret"
+                    className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
+                  />
+                  <input
+                    type="text"
+                    value={slackRedirectUri}
+                    onChange={(e) => setSlackRedirectUri(e.target.value)}
+                    placeholder="Redirect URI"
+                    className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 font-mono text-[10px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
+                  />
                   <div className="text-[10px] leading-relaxed text-muted-fg">
-                    Reconfiguration requires entering Client ID and Client Secret again for safety.
+                    Add the Redirect URI above to your Slack App under{" "}
+                    <span className="text-dark">OAuth &amp; Permissions → Redirect URLs</span>.
                   </div>
-                )}
-                {slackCfgError && <div className="text-[11px] text-orange">{slackCfgError}</div>}
-                <button
-                  type="button"
-                  onClick={() => void handleSlackSaveConfig()}
-                  disabled={slackCfgSaving || !slackClientId.trim() || !slackClientSecret.trim()}
-                  className="w-full rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {slackCfgSaving ? "Saving…" : "Connect with Slack"}
-                </button>
-                {slackOauthConfig?.configured && showSlackConfigure && (
+                  {slackOauthConfig?.configured && showSlackConfigure && (
+                    <div className="text-[10px] leading-relaxed text-muted-fg">
+                      Reconfiguration requires entering Client ID and Client Secret again for
+                      safety.
+                    </div>
+                  )}
+                  {slackCfgError && <div className="text-[11px] text-orange">{slackCfgError}</div>}
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowSlackConfigure(false);
-                      setSlackCfgError(null);
-                    }}
-                    className="w-full rounded-md border border-border py-1.5 text-xs font-semibold text-ink transition hover:border-pink hover:text-pink"
+                    onClick={() => void handleSlackSaveConfig()}
+                    disabled={slackCfgSaving || !slackClientId.trim() || !slackClientSecret.trim()}
+                    className="w-full rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Cancel
+                    {slackCfgSaving ? "Saving…" : "Connect with Slack"}
                   </button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-[11px] text-muted-fg">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-pink" />
-                  OAuth app configured
-                  <span className="font-mono text-[10px]">{slackOauthConfig.redirectUri}</span>
+                  {slackOauthConfig?.configured && showSlackConfigure && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSlackConfigure(false);
+                        setSlackCfgError(null);
+                      }}
+                      className="w-full rounded-md border border-border py-1.5 text-xs font-semibold text-ink transition hover:border-pink hover:text-pink"
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <a
-                    href="/api/connectors/slack/oauth/start?returnTo=/connectors"
-                    className="inline-flex flex-1 items-center justify-center rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90"
-                  >
-                    Connect with Slack
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => setShowSlackConfigure(true)}
-                    className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-pink hover:text-pink"
-                  >
-                    Reconfigure
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleSlackRemoveConfig()}
-                    className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-orange hover:text-orange"
-                  >
-                    Remove credentials
-                  </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-[11px] text-muted-fg">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-pink" />
+                    OAuth app configured
+                    <span className="font-mono text-[10px]">{slackOauthConfig.redirectUri}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <a
+                      href="/api/connectors/slack/oauth/start?returnTo=/connectors"
+                      className="inline-flex flex-1 items-center justify-center rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90"
+                    >
+                      Connect with Slack
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setShowSlackConfigure(true)}
+                      className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-pink hover:text-pink"
+                    >
+                      Reconfigure
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleSlackRemoveConfig()}
+                      className="rounded-md border border-border px-3 py-1.5 text-[11px] text-ink transition hover:border-orange hover:text-orange"
+                    >
+                      Remove credentials
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* ══════════════════════════════════════════════════════════
               JIRA SECTION
