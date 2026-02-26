@@ -36,6 +36,7 @@ export function FileSidebar({
   const [loadingSessionDetail, setLoadingSessionDetail] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [loadingFiles, setLoadingFiles] = useState(true);
 
   const fetchFiles = useCallback(async () => {
     try {
@@ -44,6 +45,8 @@ export function FileSidebar({
       setFiles(data.workflows ?? []);
     } catch {
       // ignore
+    } finally {
+      setLoadingFiles(false);
     }
   }, []);
 
@@ -209,7 +212,7 @@ export function FileSidebar({
       <SidebarHeader onCreateClick={() => setShowCreate(true)} />
 
       <div className="flex-1 overflow-y-auto">
-        {files.length === 0 ? (
+        {!loadingFiles && files.length === 0 ? (
           <div className="px-3 py-4 text-[11px] leading-relaxed text-muted-fg">
             No workflow files yet.
             <br />

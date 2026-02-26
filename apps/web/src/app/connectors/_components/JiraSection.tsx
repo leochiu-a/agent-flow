@@ -104,7 +104,7 @@ export function JiraSection({
         </div>
       )}
 
-      {!hasConnected && (
+      {!loading && !hasConnected && (
         <div className="mt-6 rounded-lg border border-border bg-white px-5 py-5 shadow-sm">
           <div className="mb-5 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 32 32" fill="none" className="shrink-0">
