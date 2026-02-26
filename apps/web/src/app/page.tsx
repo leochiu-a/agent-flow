@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { load as yamlLoad } from "js-yaml";
 import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
@@ -49,9 +48,6 @@ export default function Home() {
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-canvas text-dark">
       <header className="flex h-12 shrink-0 items-center border-b border-border bg-white px-4 shadow-sm">
         <span className="text-sm font-bold tracking-wide text-pink">AGENT FLOW</span>
-        <span className="ml-3 text-[11px] uppercase tracking-[0.14em] text-muted-fg">
-          Visual Workflow Builder
-        </span>
 
         <div className="ml-auto flex items-center gap-2">
           {lines.length > 0 && !showTerminal && (
@@ -63,12 +59,6 @@ export default function Home() {
               Show Output
             </button>
           )}
-          <Link
-            href="/connectors"
-            className="rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink"
-          >
-            Connectors
-          </Link>
         </div>
       </header>
 

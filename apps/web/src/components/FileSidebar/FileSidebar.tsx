@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { GitBranch, Plug } from "lucide-react";
 
 import type { LogLine } from "../WorkflowCanvas";
 import { formatDuration } from "../../utils/time";
@@ -178,8 +181,31 @@ export function FileSidebar({
     }
   };
 
+  const pathname = usePathname();
+
   return (
     <aside className="flex w-64 shrink-0 flex-col overflow-hidden border-r border-border bg-white">
+      <nav className="px-2 py-1.5 flex flex-col gap-0.5">
+        <Link
+          href="/"
+          className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition hover:bg-surface ${
+            pathname === "/" ? "bg-surface font-semibold text-pink" : "text-ink"
+          }`}
+        >
+          <GitBranch size={14} className={pathname === "/" ? "text-pink" : "text-muted-fg"} />
+          Workflows
+        </Link>
+        <Link
+          href="/connectors"
+          className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition hover:bg-surface ${
+            pathname === "/connectors" ? "bg-surface font-semibold text-pink" : "text-ink"
+          }`}
+        >
+          <Plug size={14} className={pathname === "/connectors" ? "text-pink" : "text-muted-fg"} />
+          Connectors
+        </Link>
+      </nav>
+
       <SidebarHeader onCreateClick={() => setShowCreate(true)} />
 
       <div className="flex-1 overflow-y-auto">
