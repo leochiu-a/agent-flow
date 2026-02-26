@@ -49,7 +49,7 @@ export function ShellStepModal({
     <div className="flex flex-col gap-4">
       <div className="text-xs font-semibold uppercase tracking-wide text-orange">Shell Step</div>
 
-      <label className="flex flex-col gap-1 text-[11px] text-secondary">
+      <label className="flex flex-col gap-1 text-[11px] text-ink">
         Step name
         <input
           autoFocus
@@ -60,7 +60,7 @@ export function ShellStepModal({
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-[11px] text-secondary">
+      <label className="flex flex-col gap-1 text-[11px] text-ink">
         Shell command
         <textarea
           value={command}
@@ -77,7 +77,7 @@ export function ShellStepModal({
         <button
           type="button"
           onClick={handleCancel}
-          className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-secondary transition hover:border-muted-fg hover:text-dark"
+          className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-ink transition hover:border-muted-fg hover:text-dark"
         >
           Cancel
         </button>

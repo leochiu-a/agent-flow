@@ -7,6 +7,7 @@ export interface StepNodeData {
   title: string;
   type: "claude" | "shell";
   prompt: string;
+  skipPermission?: boolean;
   onRequestEdit: (id: string) => void;
   onDelete: (id: string) => void;
   [key: string]: unknown;

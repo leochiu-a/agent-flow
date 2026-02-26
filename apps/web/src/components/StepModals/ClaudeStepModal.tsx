@@ -1,19 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ClaudeStepModalProps {
   initialTitle: string;
   initialPrompt: string;
+  initialSkipPermission?: boolean;
   saving: boolean;
   error: string | null;
-  onSave: (title: string, prompt: string) => void;
+  onSave: (title: string, prompt: string, skipPermission: boolean) => void;
   onCancel: () => void;
 }
 
 export function ClaudeStepModal({
   initialTitle,
   initialPrompt,
+  initialSkipPermission = false,
   saving,
   error,
   onSave,
@@ -21,9 +24,11 @@ export function ClaudeStepModal({
 }: ClaudeStepModalProps) {
   const [title, setTitle] = useState(initialTitle);
   const [prompt, setPrompt] = useState(initialPrompt);
+  const [skipPermission, setSkipPermission] = useState(initialSkipPermission);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isDirty = title !== initialTitle || prompt !== initialPrompt;
+  const isDirty =
+    title !== initialTitle || prompt !== initialPrompt || skipPermission !== initialSkipPermission;
 
   const handleCancel = () => {
     if (isDirty && !confirm("You have unsaved changes. Discard?")) return;
@@ -40,7 +45,7 @@ export function ClaudeStepModal({
       return;
     }
     setValidationError(null);
-    onSave(title, prompt);
+    onSave(title, prompt, skipPermission);
   };
 
   const displayError = validationError ?? error;
@@ -51,7 +56,7 @@ export function ClaudeStepModal({
         Claude Agent Step
       </div>
 
-      <label className="flex flex-col gap-1 text-[11px] text-secondary">
+      <label className="flex flex-col gap-1 text-[11px] text-ink">
         Step name
         <input
           autoFocus
@@ -62,7 +67,7 @@ export function ClaudeStepModal({
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-[11px] text-secondary">
+      <label className="flex flex-col gap-1 text-[11px] text-ink">
         Prompt
         <textarea
           value={prompt}
@@ -73,13 +78,29 @@ export function ClaudeStepModal({
         />
       </label>
 
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="skip-permission"
+          checked={skipPermission}
+          onCheckedChange={(checked) => setSkipPermission(checked === true)}
+          className="data-[state=checked]:bg-pink data-[state=checked]:border-pink"
+        />
+        <label
+          htmlFor="skip-permission"
+          className="cursor-pointer select-none text-[11px] text-dark"
+        >
+          Skip permission check
+          <span className="ml-1 text-muted-fg">(--dangerously-skip-permissions)</span>
+        </label>
+      </div>
+
       {displayError && <div className="text-[11px] text-pink">{displayError}</div>}
 
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={handleCancel}
-          className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-secondary transition hover:border-muted-fg hover:text-dark"
+          className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-ink transition hover:border-muted-fg hover:text-dark"
         >
           Cancel
         </button>

@@ -9,9 +9,10 @@ interface StepEditModalProps {
   stepType: "claude" | "shell";
   initialTitle: string;
   initialPrompt: string;
+  initialSkipPermission?: boolean;
   saving: boolean;
   error: string | null;
-  onSave: (id: string, title: string, prompt: string) => void;
+  onSave: (id: string, title: string, prompt: string, skipPermission: boolean) => void;
   onClose: () => void;
 }
 
@@ -20,6 +21,7 @@ export function StepEditModal({
   stepType,
   initialTitle,
   initialPrompt,
+  initialSkipPermission,
   saving,
   error,
   onSave,
@@ -34,8 +36,8 @@ export function StepEditModal({
   }, [onClose]);
 
   const handleSave = useCallback(
-    (title: string, detail: string) => {
-      onSave(stepId, title, detail);
+    (title: string, detail: string, skipPermission: boolean) => {
+      onSave(stepId, title, detail, skipPermission);
     },
     [stepId, onSave],
   );
@@ -52,6 +54,7 @@ export function StepEditModal({
           <ClaudeStepModal
             initialTitle={initialTitle}
             initialPrompt={initialPrompt}
+            initialSkipPermission={initialSkipPermission}
             saving={saving}
             error={error}
             onSave={handleSave}

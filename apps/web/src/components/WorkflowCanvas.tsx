@@ -83,6 +83,7 @@ export function WorkflowCanvas({
           title: step.name,
           type: step.agent === "claude" ? "claude" : "shell",
           prompt: step.agent === "claude" ? (step.prompt ?? "") : (step.run ?? ""),
+          skipPermission: step.agent === "claude" ? (step.skip_permission ?? false) : false,
           onRequestEdit,
           onDelete,
         },
@@ -177,7 +178,7 @@ export function WorkflowCanvas({
             name: d.title || "Claude Step",
             agent: "claude",
             prompt: d.prompt || "",
-            skip_permission: true,
+            skip_permission: d.skipPermission ?? false,
           };
         }
 
@@ -254,7 +255,7 @@ export function WorkflowCanvas({
   }, [onLinesChange, onRunningChange, running]);
 
   const handleModalSave = useCallback(
-    async (id: string, title: string, prompt: string) => {
+    async (id: string, title: string, prompt: string, skipPermission: boolean) => {
       if (isModalSaving) return;
 
       setIsModalSaving(true);
@@ -262,7 +263,7 @@ export function WorkflowCanvas({
 
       // Build definition with updated data applied inline
       const currentNodes = nodesRef.current.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, title, prompt } } : node,
+        node.id === id ? { ...node, data: { ...node.data, title, prompt, skipPermission } } : node,
       );
 
       const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
@@ -271,7 +272,9 @@ export function WorkflowCanvas({
         // No file selected — update node state only, close modal
         setNodesRef.current((nds) =>
           nds.map((node) =>
-            node.id === id ? { ...node, data: { ...node.data, title, prompt } } : node,
+            node.id === id
+              ? { ...node, data: { ...node.data, title, prompt, skipPermission } }
+              : node,
           ),
         );
         setEditingStepId(null);
@@ -288,7 +291,7 @@ export function WorkflowCanvas({
               name: d.title || "Claude Step",
               agent: "claude",
               prompt: d.prompt || "",
-              skip_permission: true,
+              skip_permission: d.skipPermission ?? false,
             };
           }
           return { name: d.title || "Shell Step", run: d.prompt || "" };
@@ -306,7 +309,9 @@ export function WorkflowCanvas({
           // Persist node state update only after successful save
           setNodesRef.current((nds) =>
             nds.map((node) =>
-              node.id === id ? { ...node, data: { ...node.data, title, prompt } } : node,
+              node.id === id
+                ? { ...node, data: { ...node.data, title, prompt, skipPermission } }
+                : node,
             ),
           );
           setEditingStepId(null);
@@ -440,9 +445,12 @@ export function WorkflowCanvas({
           stepType={(editingNode.data as StepNodeData).type}
           initialTitle={(editingNode.data as StepNodeData).title}
           initialPrompt={(editingNode.data as StepNodeData).prompt}
+          initialSkipPermission={(editingNode.data as StepNodeData).skipPermission}
           saving={isModalSaving}
           error={modalError}
-          onSave={(id, title, prompt) => void handleModalSave(id, title, prompt)}
+          onSave={(id, title, prompt, skipPermission) =>
+            void handleModalSave(id, title, prompt, skipPermission)
+          }
           onClose={() => {
             setEditingStepId(null);
             setModalError(null);
