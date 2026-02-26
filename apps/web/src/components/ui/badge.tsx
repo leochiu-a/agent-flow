@@ -17,6 +17,16 @@ const badgeVariants = cva(
           "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
+        // Project-specific variants
+        connected:
+          "bg-pink/10 text-pink border-pink/30 text-[10px] font-semibold uppercase tracking-wide",
+        disconnected:
+          "bg-disabled text-ink border-border text-[10px] font-semibold uppercase tracking-wide",
+        connecting:
+          "bg-disabled text-ink border-border text-[10px] font-semibold uppercase tracking-wide",
+        error:
+          "bg-orange/10 text-orange border-orange/30 text-[10px] font-semibold uppercase tracking-wide",
+        count: "bg-surface text-muted-fg border-transparent px-1.5 text-[9px] font-semibold",
       },
     },
     defaultVariants: {

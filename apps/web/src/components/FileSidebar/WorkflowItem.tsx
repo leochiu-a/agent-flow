@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { SessionItem } from "./SessionItem";
 import type { SessionSummary } from "./types";
+import { Badge } from "@/components/ui/badge";
 
 interface WorkflowItemProps {
   filename: string;
@@ -54,11 +55,7 @@ export function WorkflowItem({
         {isRunning && <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-pink animate-pulse" />}
 
         {/* Session count badge */}
-        {sessions.length > 0 && (
-          <span className="shrink-0 rounded-full bg-surface px-1.5 py-0.5 text-[9px] font-semibold text-muted-fg">
-            {sessions.length}
-          </span>
-        )}
+        {sessions.length > 0 && <Badge variant="count">{sessions.length}</Badge>}
       </button>
 
       {isExpanded && (

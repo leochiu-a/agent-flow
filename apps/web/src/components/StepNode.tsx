@@ -3,6 +3,7 @@
 import { Bot, Pencil, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export interface StepNodeData {
   title: string;
@@ -19,7 +20,6 @@ export function StepNode({ id, data, selected }: NodeProps) {
   const tone = {
     card: "bg-white border-pink/40",
     focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
-    badge: "bg-pink/10 text-pink border border-pink/30",
     editHover: "hover:text-pink",
   };
 
@@ -43,12 +43,10 @@ export function StepNode({ id, data, selected }: NodeProps) {
 
       {/* Header: type badge + action buttons */}
       <div className="mb-2.5 flex items-center gap-2">
-        <span
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
-        >
-          <Bot size={10} />
+        <Badge variant="connected">
+          <Bot />
           Claude
-        </span>
+        </Badge>
 
         <div className="ml-auto flex items-center gap-1">
           <Button
