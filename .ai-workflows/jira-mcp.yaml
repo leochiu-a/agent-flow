@@ -1,0 +1,7 @@
+name: jira-mcp
+claude_session: shared
+workflow:
+  - name: list jira projects
+    agent: claude
+    prompt: Get a random jira ticket
+    skip_permission: true
