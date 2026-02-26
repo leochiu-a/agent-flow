@@ -54,6 +54,8 @@ export function WorkflowCanvas({
   const [isModalSaving, setIsModalSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
   const setNodesRef = useRef(setNodes);
   setNodesRef.current = setNodes;
   const setEdgesRef = useRef(setEdges);
@@ -105,40 +107,37 @@ export function WorkflowCanvas({
   const addNode = useCallback(
     (type: "claude" | "shell") => {
       const id = newId();
+      const lastNode = nodesRef.current[nodesRef.current.length - 1];
+      const x = lastNode ? lastNode.position.x + 340 : 60;
+      const y = lastNode ? lastNode.position.y : 120;
 
-      setNodes((nds) => {
-        const lastNode = nds[nds.length - 1];
-        const x = lastNode ? lastNode.position.x + 340 : 60;
-        const y = lastNode ? lastNode.position.y : 120;
+      const newNode: Node = {
+        id,
+        type: "step",
+        position: { x, y },
+        data: {
+          title: type === "claude" ? "Claude Step" : "Shell Step",
+          type,
+          prompt: "",
+          onRequestEdit,
+          onDelete,
+        },
+      };
 
-        const newNode: Node = {
-          id,
-          type: "step",
-          position: { x, y },
-          data: {
-            title: type === "claude" ? "Claude Step" : "Shell Step",
-            type,
-            prompt: "",
-            onRequestEdit,
-            onDelete,
+      setNodes((nds) => [...nds, newNode]);
+
+      if (lastNode) {
+        setEdgesRef.current((eds) => [
+          ...eds,
+          {
+            id: `e-${lastNode.id}-${id}`,
+            source: lastNode.id,
+            target: id,
+            animated: true,
+            style: { stroke: "var(--color-pink)", strokeWidth: 2 },
           },
-        };
-
-        if (lastNode) {
-          setEdgesRef.current((eds) => [
-            ...eds,
-            {
-              id: `e-${lastNode.id}-${id}`,
-              source: lastNode.id,
-              target: id,
-              animated: true,
-              style: { stroke: "var(--color-pink)", strokeWidth: 2 },
-            },
-          ]);
-        }
-
-        return [...nds, newNode];
-      });
+        ]);
+      }
     },
     [onDelete, onRequestEdit, setNodes],
   );
@@ -153,9 +152,6 @@ export function WorkflowCanvas({
       ),
     [setEdges],
   );
-
-  const nodesRef = useRef(nodes);
-  nodesRef.current = nodes;
 
   const runWorkflow = useCallback(async () => {
     const currentNodes = nodesRef.current;
