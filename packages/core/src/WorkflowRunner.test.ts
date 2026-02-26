@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "vitest";
@@ -28,6 +28,9 @@ for arg in "$@"; do
 done
 if [ -n "$CLAUDE_ARGS_LOG" ]; then
   printf '__END__\\n' >> "$CLAUDE_ARGS_LOG"
+fi
+if [ -n "$CLAUDE_CWD_LOG" ]; then
+  pwd > "$CLAUDE_CWD_LOG"
 fi
 if [ "$prompt" = "__FAIL__" ]; then
   printf '{"type":"assistant","message":{"content":[{"type":"text","text":"mock-fail"}]}}\\n'
@@ -272,6 +275,35 @@ workflow:
     assert.equal(result.success, true);
     assert.equal(result.steps.length, 1);
     assert.equal(result.steps[0]?.name, "file-step");
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("uses configured cwd when spawning Claude", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-cwd-"));
+  await createMockClaudeBinary(tmpDir);
+  const workspaceDir = path.join(tmpDir, "workspace");
+  const cwdLogPath = path.join(tmpDir, "cwd.log");
+  await mkdir(workspaceDir, { recursive: true });
+
+  try {
+    const runner = new WorkflowRunner({
+      cwd: workspaceDir,
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_CWD_LOG: cwdLogPath,
+      },
+    });
+
+    const result = await runner.run({
+      name: "cwd-test",
+      workflow: [{ name: "step", agent: "claude", prompt: "verify cwd" }],
+    });
+
+    assert.equal(result.success, true);
+    const cwdUsed = (await readFile(cwdLogPath, "utf-8")).trim();
+    assert.equal(cwdUsed, await realpath(workspaceDir));
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }

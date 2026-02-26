@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { Trash2 } from "lucide-react";
 import { formatTime, formatDuration } from "../../utils/time";
 import type { SessionSummary } from "./types";
@@ -5,15 +6,17 @@ import type { SessionSummary } from "./types";
 interface SessionItemProps {
   session: SessionSummary;
   workflowFile: string;
+  workflowLabel?: string;
   isLoading: boolean;
   isActive: boolean;
   isDeleting: boolean;
   onClick: () => void;
-  onDelete: (e: React.MouseEvent) => void;
+  onDelete: (e: MouseEvent) => void;
 }
 
 export function SessionItem({
   session,
+  workflowLabel,
   isLoading,
   isActive,
   isDeleting,
@@ -36,6 +39,11 @@ export function SessionItem({
       />
 
       <div className="min-w-0 flex-1">
+        {workflowLabel && (
+          <div className="truncate text-[9px] font-medium uppercase tracking-wide text-pink">
+            [{workflowLabel}]
+          </div>
+        )}
         <div className="truncate text-[10px] text-ink">{formatTime(session.startedAt)}</div>
         <div className="text-[9px] text-muted-fg">{formatDuration(session.durationMs)}</div>
       </div>

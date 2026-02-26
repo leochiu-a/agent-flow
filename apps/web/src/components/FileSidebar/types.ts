@@ -1,5 +1,6 @@
 export interface SessionSummary {
   id: string;
+  workingDirectory?: string;
   startedAt: number;
   endedAt: number;
   durationMs: number;
@@ -17,6 +18,7 @@ export interface SessionDetail {
   id: string;
   workflowFile: string;
   workflowName: string;
+  workingDirectory?: string;
   startedAt: number;
   endedAt: number;
   durationMs: number;
@@ -26,4 +28,9 @@ export interface SessionDetail {
     success: boolean;
     steps: Array<{ name: string; success: boolean; exitCode: number | null }>;
   };
+}
+
+export interface SessionSummaryWithWorkflow extends SessionSummary {
+  workflowFile: string;
+  workflowName: string;
 }

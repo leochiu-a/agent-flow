@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { ChevronRight } from "lucide-react";
 import { SessionItem } from "./SessionItem";
 import type { SessionSummary } from "./types";
@@ -15,7 +16,7 @@ interface WorkflowItemProps {
   deletingSession: string | null;
   onWorkflowClick: () => void;
   onSessionClick: (sessionId: string) => void;
-  onDeleteSession: (e: React.MouseEvent, sessionId: string) => void;
+  onDeleteSession: (e: MouseEvent, sessionId: string) => void;
 }
 
 export function WorkflowItem({

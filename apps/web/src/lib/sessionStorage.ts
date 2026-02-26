@@ -7,6 +7,7 @@ export interface SessionRecord {
   id: string;
   workflowFile: string;
   workflowName: string;
+  workingDirectory?: string;
   startedAt: number;
   endedAt: number;
   durationMs: number;
@@ -18,10 +19,16 @@ export interface SessionRecord {
 
 export interface SessionSummary {
   id: string;
+  workingDirectory?: string;
   startedAt: number;
   endedAt: number;
   durationMs: number;
   success: boolean;
+}
+
+export interface SessionSummaryWithWorkflow extends SessionSummary {
+  workflowFile: string;
+  workflowName: string;
 }
 
 function sanitizeName(input: string): string {
@@ -62,6 +69,7 @@ export async function listSessions(workflowFile: string): Promise<SessionSummary
         const record = JSON.parse(raw) as SessionRecord;
         sessions.push({
           id: record.id,
+          workingDirectory: record.workingDirectory,
           startedAt: record.startedAt,
           endedAt: record.endedAt,
           durationMs: record.durationMs,
@@ -69,6 +77,46 @@ export async function listSessions(workflowFile: string): Promise<SessionSummary
         });
       } catch {
         console.warn(`[sessions] Skipping corrupted session file: ${entry}`);
+      }
+    }
+
+    return sessions.sort((a, b) => b.startedAt - a.startedAt);
+  } catch {
+    return [];
+  }
+}
+
+export async function listAllSessions(): Promise<SessionSummaryWithWorkflow[]> {
+  const baseDir = path.join(process.cwd(), ".ai-workflows", ".sessions");
+  try {
+    const workflowDirs = await fs.readdir(baseDir, { withFileTypes: true });
+    const sessions: SessionSummaryWithWorkflow[] = [];
+
+    for (const dirEntry of workflowDirs) {
+      if (!dirEntry.isDirectory()) continue;
+      const workflowFile = dirEntry.name;
+      const workflowDir = path.join(baseDir, workflowFile);
+
+      const sessionFiles = await fs.readdir(workflowDir);
+      for (const entry of sessionFiles) {
+        if (!entry.endsWith(".json")) continue;
+        const filePath = path.join(workflowDir, entry);
+        try {
+          const raw = await fs.readFile(filePath, "utf-8");
+          const record = JSON.parse(raw) as SessionRecord;
+          sessions.push({
+            id: record.id,
+            workflowFile: record.workflowFile,
+            workflowName: record.workflowName,
+            workingDirectory: record.workingDirectory,
+            startedAt: record.startedAt,
+            endedAt: record.endedAt,
+            durationMs: record.durationMs,
+            success: record.success,
+          });
+        } catch {
+          console.warn(`[sessions] Skipping corrupted session file: ${entry}`);
+        }
       }
     }
 

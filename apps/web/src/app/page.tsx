@@ -14,6 +14,7 @@ export default function Home() {
   const [showTerminal, setShowTerminal] = useState(false);
   const [workflowDefinition, setWorkflowDefinition] = useState<WorkflowDefinition | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<{ filename: string; content: string } | null>(
     null,
   );
@@ -26,6 +27,7 @@ export default function Home() {
       setWorkflowDefinition(parsed);
     } catch {
       // ignore invalid YAML
+      setWorkflowDefinition(null);
     }
   };
 
@@ -69,6 +71,9 @@ export default function Home() {
           savedContent={savedContent}
           refreshKey={sessionRefreshKey}
           runningFile={running ? selectedFile : null}
+          selectedFile={selectedFile}
+          selectedFolder={selectedFolder}
+          onSelectFolder={setSelectedFolder}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -80,6 +85,7 @@ export default function Home() {
               onRunningChange={handleRunningChange}
               workflowDefinition={workflowDefinition}
               selectedFile={selectedFile}
+              selectedFolder={selectedFolder}
               onSave={(filename, content) => setSavedContent({ filename, content })}
             />
           </div>

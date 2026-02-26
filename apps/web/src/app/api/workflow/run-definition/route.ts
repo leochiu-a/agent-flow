@@ -4,16 +4,33 @@ import type { WorkflowDefinition, LogEntry, WorkflowResult } from "@agent-flow/c
 import { writeSession, generateSessionId } from "@/lib/sessionStorage";
 import { loadConnectorEnv } from "@/lib/connectorEnv";
 import { registerRunner, unregisterRunner } from "@/lib/runnerRegistry";
+import { validateAllowedDirectory } from "@/lib/directoryAccess";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const { definition, workflowFile: wfFile } = (await req.json()) as {
+  const {
+    definition,
+    workflowFile: wfFile,
+    workingDirectory: wd,
+  } = (await req.json()) as {
     definition: WorkflowDefinition;
     workflowFile?: string;
+    workingDirectory?: string;
   };
 
   const workflowFile = wfFile ?? "__unsaved__";
+  let workingDirectory: string | undefined;
+  if (typeof wd === "string" && wd.trim()) {
+    const validated = await validateAllowedDirectory(wd.trim());
+    if (!validated.ok || !validated.resolvedPath) {
+      return Response.json(
+        { error: validated.error ?? "Directory access denied." },
+        { status: validated.status },
+      );
+    }
+    workingDirectory = validated.resolvedPath;
+  }
   const sessionId = generateSessionId();
   const startedAt = Date.now();
   const logs: LogEntry[] = [];
@@ -44,7 +61,7 @@ export async function POST(req: NextRequest) {
         }
       };
 
-      runner = new WorkflowRunner({ env: connectorEnv });
+      runner = new WorkflowRunner({ env: connectorEnv, cwd: workingDirectory });
 
       registerRunner(sessionId, runner);
 
@@ -64,6 +81,7 @@ export async function POST(req: NextRequest) {
           id: sessionId,
           workflowFile,
           workflowName: definition.name ?? workflowFile,
+          workingDirectory,
           startedAt,
           endedAt,
           durationMs: endedAt - startedAt,

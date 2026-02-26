@@ -13,18 +13,21 @@ import type {
 
 export interface RunnerOptions {
   env?: NodeJS.ProcessEnv;
+  cwd?: string;
 }
 
 export class WorkflowRunner extends EventEmitter {
   private aborted = false;
   private currentChild: ChildProcess | null = null;
   private spawnEnv: NodeJS.ProcessEnv;
+  private spawnCwd: string;
   private claudeSessionMode: ClaudeSessionMode = "isolated";
   private lastClaudeSessionId: string | null = null;
 
   constructor(options: RunnerOptions = {}) {
     super();
     this.spawnEnv = { ...process.env, ...options.env };
+    this.spawnCwd = options.cwd ?? process.cwd();
   }
 
   override emit(event: "log", entry: LogEntry): boolean;
@@ -102,6 +105,7 @@ export class WorkflowRunner extends EventEmitter {
       const child = spawn("claude", args, {
         stdio: ["ignore", "pipe", "pipe"],
         env: this.spawnEnv,
+        cwd: this.spawnCwd,
       });
       this.currentChild = child;
 

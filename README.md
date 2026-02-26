@@ -86,6 +86,9 @@ pnpm dev
 - pnpm >= 10
 - `claude` CLI installed and authenticated (for AI steps)
 
+Optional environment variable:
+- `AGENT_FLOW_ALLOWED_DIRS` (comma-separated absolute paths): restricts which directories can be browsed/used as workflow working directories in the web UI. Defaults to `$HOME` and `process.cwd()`.
+
 ## Acknowledgements
 
 This project uses [React Flow](https://reactflow.dev/) — a highly customizable React component for building node-based editors and interactive diagrams, developed by [xyflow](https://xyflow.com/).

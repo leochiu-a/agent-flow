@@ -32,12 +32,18 @@ interface WorkflowCanvasProps {
   onRunningChange: (running: boolean) => void;
   workflowDefinition?: WorkflowDefinition | null;
   selectedFile?: string | null;
+  selectedFolder?: string | null;
   onSave?: (filename: string, content: string) => void;
 }
 
 const nodeTypes = { step: StepNode };
 
 const newId = () => `step-${crypto.randomUUID().slice(0, 8)}`;
+
+function getFolderDisplayName(folderPath: string): string {
+  const parts = folderPath.split(/[\\/]/).filter(Boolean);
+  return parts[parts.length - 1] ?? folderPath;
+}
 
 function resolveClaudeSessionMode(
   steps: WorkflowDefinition["workflow"],
@@ -53,6 +59,7 @@ export function WorkflowCanvas({
   onRunningChange,
   workflowDefinition,
   selectedFile,
+  selectedFolder,
   onSave,
 }: WorkflowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -85,7 +92,11 @@ export function WorkflowCanvas({
   }, []);
 
   useEffect(() => {
-    if (!workflowDefinition?.workflow?.length) return;
+    if (!workflowDefinition?.workflow?.length) {
+      setNodes([]);
+      setEdges([]);
+      return;
+    }
 
     const newNodes: Node[] = workflowDefinition.workflow.map((step, i) => {
       const id = newId();
@@ -200,7 +211,11 @@ export function WorkflowCanvas({
       const res = await fetch("/api/workflow/run-definition", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ definition, workflowFile: selectedFile ?? undefined }),
+        body: JSON.stringify({
+          definition,
+          workflowFile: selectedFile ?? undefined,
+          workingDirectory: selectedFolder ?? undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -267,7 +282,14 @@ export function WorkflowCanvas({
       setRunning(false);
       onRunningChange(false);
     }
-  }, [onLinesChange, onRunningChange, running, workflowDefinition?.claude_session]);
+  }, [
+    onLinesChange,
+    onRunningChange,
+    running,
+    selectedFile,
+    selectedFolder,
+    workflowDefinition?.claude_session,
+  ]);
 
   const stopWorkflow = useCallback(async () => {
     if (!sessionId || stopping) return;
@@ -383,6 +405,12 @@ export function WorkflowCanvas({
           + Claude Agent
         </Button>
 
+        <div className="max-w-[220px] truncate rounded-md bg-surface px-2 py-1 text-[10px] text-ink">
+          {selectedFolder
+            ? `Folder: ${getFolderDisplayName(selectedFolder)}`
+            : "Select a folder to run"}
+        </div>
+
         <div className="mx-1 h-6 w-px bg-border" />
 
         {running ? (
@@ -397,7 +425,12 @@ export function WorkflowCanvas({
             {stopping ? "Stopping…" : "Stop"}
           </Button>
         ) : (
-          <Button variant="pink" size="sm" onClick={runWorkflow} disabled={nodes.length === 0}>
+          <Button
+            variant="pink"
+            size="sm"
+            onClick={runWorkflow}
+            disabled={nodes.length === 0 || !selectedFolder}
+          >
             <Play size={11} className="mr-1" />
             Run
           </Button>
@@ -434,7 +467,9 @@ export function WorkflowCanvas({
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-placeholder">
           <Clock size={64} strokeWidth={1} />
           <div className="text-sm tracking-wide">
-            Add a step above to start building your workflow
+            {selectedFile
+              ? "Add a step above to start building your workflow"
+              : "Load a workflow to display it on canvas"}
           </div>
         </div>
       )}
