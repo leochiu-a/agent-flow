@@ -95,7 +95,7 @@ export function FolderBrowserModal({
               onClick={() => void fetchDirectory(currentPath || undefined)}
               disabled={loading}
             >
-              <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={11} />
               Refresh
             </Button>
             <Button variant="outline" size="xs" onClick={onClose}>
@@ -107,7 +107,7 @@ export function FolderBrowserModal({
         <div className="border-b border-border px-4 py-2">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1 truncate text-[11px] text-ink" title={breadcrumb}>
-              {breadcrumb || "Loading..."}
+              {breadcrumb}
             </div>
             <label className="flex items-center gap-1.5 text-[11px] text-ink">
               <Checkbox
@@ -119,7 +119,7 @@ export function FolderBrowserModal({
           </div>
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto px-2 py-2">
+        <div className="relative h-[420px] overflow-y-auto px-2 py-2">
           <button
             type="button"
             onClick={() => {
@@ -136,8 +136,6 @@ export function FolderBrowserModal({
 
           {error ? (
             <div className="px-2 py-3 text-[11px] text-pink">{error}</div>
-          ) : loading ? (
-            <div className="px-2 py-3 text-[11px] text-muted-fg">Loading folders...</div>
           ) : visibleDirectories.length === 0 ? (
             <div className="px-2 py-3 text-[11px] text-muted-fg">No subfolders.</div>
           ) : (
@@ -146,7 +144,8 @@ export function FolderBrowserModal({
                 key={directory.path}
                 type="button"
                 onClick={() => void fetchDirectory(directory.path)}
-                className="group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs text-ink transition hover:bg-surface"
+                disabled={loading}
+                className="group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-80"
                 title={directory.path}
               >
                 <Folder size={13} className="text-muted-fg" />
