@@ -2,6 +2,7 @@
 
 import { Bot, Pencil, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Button } from "@/components/ui/button";
 
 export interface StepNodeData {
   title: string;
@@ -50,22 +51,24 @@ export function StepNode({ id, data, selected }: NodeProps) {
         </span>
 
         <div className="ml-auto flex items-center gap-1">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className={`nodrag ${tone.editHover}`}
             onClick={() => d.onRequestEdit(id)}
-            className={`nodrag cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 ${tone.editHover}`}
             title="Edit step"
           >
-            <Pencil size={13} />
-          </button>
-          <button
-            type="button"
+            <Pencil />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="nodrag hover:text-pink"
             onClick={() => d.onDelete(id)}
-            className="nodrag cursor-pointer rounded-md p-1 text-muted-fg transition hover:bg-black/5 hover:text-pink"
             title="Delete step"
           >
-            <X size={13} />
-          </button>
+            <X />
+          </Button>
         </div>
       </div>
 

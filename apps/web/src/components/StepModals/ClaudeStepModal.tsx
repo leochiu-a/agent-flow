@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 interface ClaudeStepModalProps {
   initialTitle: string;
@@ -97,21 +98,12 @@ export function ClaudeStepModal({
       {displayError && <div className="text-[11px] text-pink">{displayError}</div>}
 
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-ink transition hover:border-muted-fg hover:text-dark"
-        >
+        <Button variant="outline" size="sm" onClick={handleCancel}>
           Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="cursor-pointer rounded-md bg-pink px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:bg-disabled disabled:text-muted-fg"
-        >
+        </Button>
+        <Button variant="pink" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save Step"}
-        </button>
+        </Button>
       </div>
     </div>
   );

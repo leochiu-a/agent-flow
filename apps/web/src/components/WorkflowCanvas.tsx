@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, Check, Clock, Play } from "lucide-react";
 import {
   Background,
@@ -20,6 +20,7 @@ import type { LogEntry, WorkflowDefinition } from "@agent-flow/core";
 import { StepNode } from "./StepNode";
 import type { StepNodeData } from "./StepNode";
 import { StepEditModal } from "./StepModals/StepEditModal";
+import { Button } from "@/components/ui/button";
 
 export interface LogLine {
   text: string;
@@ -339,20 +340,17 @@ export function WorkflowCanvas({
   return (
     <div className="relative h-full w-full">
       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
-        <ToolbarButton
-          onClick={addNode}
-          disabled={running}
-          className="bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
-        >
+        <Button variant="pink" size="sm" onClick={addNode} disabled={running}>
           + Claude Agent
-        </ToolbarButton>
+        </Button>
 
         <div className="mx-1 h-6 w-px bg-border" />
 
-        <ToolbarButton
+        <Button
+          variant="pink"
+          size="sm"
           onClick={runWorkflow}
           disabled={running || nodes.length === 0}
-          className="bg-pink hover:bg-pink/90 disabled:bg-disabled disabled:text-muted-fg"
         >
           {running ? (
             <>
@@ -365,7 +363,7 @@ export function WorkflowCanvas({
               Run
             </>
           )}
-        </ToolbarButton>
+        </Button>
 
         {saveStatus !== "idle" && (
           <span
@@ -453,28 +451,5 @@ export function WorkflowCanvas({
         />
       )}
     </div>
-  );
-}
-
-function ToolbarButton({
-  onClick,
-  disabled,
-  className,
-  children,
-}: {
-  onClick: () => void;
-  disabled: boolean;
-  className: string;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex cursor-pointer items-center rounded-md px-3 py-1.5 text-xs font-semibold text-white transition disabled:cursor-not-allowed ${className}`}
-    >
-      {children}
-    </button>
   );
 }

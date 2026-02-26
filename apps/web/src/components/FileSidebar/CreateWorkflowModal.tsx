@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const DEFAULT_YAML = `name: "New Workflow"
 workflow:
@@ -86,22 +87,13 @@ export function CreateWorkflowModal({ onClose, onCreated }: CreateWorkflowModalP
         {createError && <div className="text-[11px] text-pink">{createError}</div>}
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-border px-3 py-1.5 text-xs text-ink transition hover:border-muted-fg hover:text-dark"
-          >
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            onClick={() => void createFile()}
-            disabled={creating}
-            className="rounded-md bg-pink px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:bg-disabled disabled:text-muted-fg"
-          >
+          <Button variant="pink" size="sm" onClick={() => void createFile()} disabled={creating}>
             {creating ? "Creating..." : "Create"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

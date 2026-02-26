@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { JiraConnectorRecord, TestResult } from "../_hooks/useConnectors";
 import { StatusBadge } from "./StatusBadge";
+import { Button } from "@/components/ui/button";
 
 interface JiraSectionProps {
   loading: boolean;
@@ -82,31 +83,27 @@ export function JiraSection({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {c.status === "disconnected" ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowReconnectPanel(true)}
-                      className="cursor-pointer rounded-md bg-pink px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-pink/90"
-                    >
+                    <Button variant="pink" size="xs" onClick={() => setShowReconnectPanel(true)}>
                       Connect
-                    </button>
+                    </Button>
                   ) : (
                     <>
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="xs"
                         onClick={() => onTest(c.id)}
                         disabled={testingId === c.id}
-                        className="cursor-pointer rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-pink hover:text-pink disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {testingId === c.id ? "Testing…" : "Test"}
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="xs"
                         onClick={() => onDisconnect(c.id)}
                         disabled={disconnectingId === c.id}
-                        className="cursor-pointer rounded-md border border-border px-2.5 py-1 text-[11px] text-ink transition hover:border-orange hover:text-orange disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {disconnectingId === c.id ? "…" : "Disconnect"}
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -179,25 +176,27 @@ export function JiraSection({
               className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-[11px] text-dark placeholder-muted-fg outline-none transition focus:border-pink"
             />
             {error && <div className="text-[11px] text-orange">{error}</div>}
-            <button
-              type="button"
+            <Button
+              variant="pink"
+              size="sm"
+              className="w-full"
               onClick={() => void handleConnect()}
               disabled={connecting || !siteUrl.trim() || !email.trim() || !apiToken.trim()}
-              className="w-full rounded-md bg-pink py-1.5 text-xs font-semibold text-white transition hover:bg-pink/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {connecting ? "Connecting…" : "Connect Jira"}
-            </button>
+            </Button>
             {showReconnectPanel && (
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full font-semibold"
                 onClick={() => {
                   setShowReconnectPanel(false);
                   setError(null);
                 }}
-                className="w-full rounded-md border border-border py-1.5 text-xs font-semibold text-ink transition hover:border-pink hover:text-pink"
               >
                 Cancel
-              </button>
+              </Button>
             )}
           </div>
         </div>
