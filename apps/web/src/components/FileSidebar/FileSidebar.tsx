@@ -194,6 +194,7 @@ export function FileSidebar({
     if (loadingSessionDetail) return;
     setLoadingSessionDetail(sessionId);
     setSelectedSession(sessionId);
+    await selectFile(workflowFile);
 
     try {
       const res = await fetch(
