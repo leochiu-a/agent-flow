@@ -13,6 +13,13 @@ import { useWorkflowRunner } from "@/hooks/useWorkflowRunner";
 import { useWorkflowGraph } from "@/hooks/useWorkflowGraph";
 import { hashFolderPath } from "@/utils/folderHash";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const FOLDERS_STORAGE_KEY = "agent-flow.folders";
 
@@ -104,19 +111,22 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
       canvas={
         <div className="relative h-full w-full">
           <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
-            <select
-              value={folderWorkflowFile}
-              onChange={(e) => setFolderWorkflowFile(e.target.value)}
+            <Select
+              value={folderWorkflowFile || undefined}
+              onValueChange={setFolderWorkflowFile}
               disabled={runner.running}
-              className="rounded-md border border-border bg-surface px-2 py-1 text-[10px] text-ink disabled:opacity-50"
             >
-              <option value="">Select workflow…</option>
-              {workflowFiles.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className="min-w-[140px] text-xs">
+                <SelectValue placeholder="Select workflow…" />
+              </SelectTrigger>
+              <SelectContent className="text-xs">
+                {workflowFiles.map((f) => (
+                  <SelectItem key={f} value={f} className="text-xs">
+                    {f}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {runner.running ? (
               <Button
