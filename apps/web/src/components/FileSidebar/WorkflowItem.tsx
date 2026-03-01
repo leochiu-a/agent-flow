@@ -1,86 +1,22 @@
-import type { MouseEvent } from "react";
-import { ChevronRight } from "lucide-react";
-import { SessionItem } from "./SessionItem";
-import type { SessionSummary } from "./types";
-import { Badge } from "@/components/ui/badge";
-
 interface WorkflowItemProps {
   filename: string;
   isSelected: boolean;
-  isExpanded: boolean;
-  isRunning: boolean;
-  sessions: SessionSummary[];
-  isLoadingSessions: boolean;
-  loadingSessionDetail: string | null;
-  selectedSession: string | null;
-  deletingSession: string | null;
   onWorkflowClick: () => void;
-  onSessionClick: (sessionId: string) => void;
-  onDeleteSession: (e: MouseEvent, sessionId: string) => void;
 }
 
-export function WorkflowItem({
-  filename,
-  isSelected,
-  isExpanded,
-  isRunning,
-  sessions,
-  isLoadingSessions,
-  loadingSessionDetail,
-  selectedSession,
-  deletingSession,
-  onWorkflowClick,
-  onSessionClick,
-  onDeleteSession,
-}: WorkflowItemProps) {
+export function WorkflowItem({ filename, isSelected, onWorkflowClick }: WorkflowItemProps) {
   return (
-    <div>
-      <button
-        type="button"
-        onClick={onWorkflowClick}
-        className={`flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
-          isSelected
-            ? "border-pink bg-pink-subtle text-dark"
-            : "border-transparent text-ink hover:bg-surface hover:text-dark"
-        }`}
-      >
-        {/* Expand arrow */}
-        <ChevronRight
-          size={12}
-          className={`shrink-0 text-muted-fg transition-transform duration-150 ${isExpanded ? "rotate-90" : ""}`}
-        />
-
-        <span className="min-w-0 flex-1 truncate">{filename}</span>
-
-        {/* Running indicator */}
-        {isRunning && <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-pink animate-pulse" />}
-
-        {/* Session count badge */}
-        {sessions.length > 0 && <Badge variant="count">{sessions.length}</Badge>}
-      </button>
-
-      {isExpanded && (
-        <div className="border-l border-border ml-4">
-          {isLoadingSessions ? (
-            <div className="px-3 py-2 text-[10px] text-muted-fg">Loading...</div>
-          ) : sessions.length === 0 ? (
-            <div className="px-3 py-2 text-[10px] text-muted-fg">No sessions</div>
-          ) : (
-            sessions.map((session) => (
-              <SessionItem
-                key={session.id}
-                session={session}
-                workflowFile={filename}
-                isLoading={loadingSessionDetail === session.id}
-                isActive={selectedSession === session.id}
-                isDeleting={deletingSession === session.id}
-                onClick={() => onSessionClick(session.id)}
-                onDelete={(e) => onDeleteSession(e, session.id)}
-              />
-            ))
-          )}
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={onWorkflowClick}
+      className={`flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
+        isSelected
+          ? "border-pink bg-pink-subtle text-dark"
+          : "border-transparent text-ink hover:bg-surface hover:text-dark"
+      }`}
+      title={filename}
+    >
+      <span className="min-w-0 flex-1 truncate">{filename}</span>
+    </button>
   );
 }

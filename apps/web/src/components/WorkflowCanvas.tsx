@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, Clock, Play, Square } from "lucide-react";
+import { AlertCircle, Check, Clock, Play, Save, Square } from "lucide-react";
 import {
   Background,
   BackgroundVariant,
@@ -28,8 +28,8 @@ export interface LogLine {
 }
 
 interface WorkflowCanvasProps {
-  onLinesChange: (updater: (prev: LogLine[]) => LogLine[]) => void;
-  onRunningChange: (running: boolean) => void;
+  onLinesChange?: (updater: (prev: LogLine[]) => LogLine[]) => void;
+  onRunningChange?: (running: boolean) => void;
   workflowDefinition?: WorkflowDefinition | null;
   selectedFile?: string | null;
   selectedFolder?: string | null;
@@ -77,6 +77,7 @@ export function WorkflowCanvas({
   setNodesRef.current = setNodes;
   const setEdgesRef = useRef(setEdges);
   setEdgesRef.current = setEdges;
+  const activeWorkflowFile = selectedFile ?? (folderWorkflowFile || null);
 
   const onRequestEdit = useCallback((id: string) => {
     setEditingStepId(id);
@@ -218,8 +219,8 @@ export function WorkflowCanvas({
     setRunning(true);
     setStopping(false);
     setSessionId(null);
-    onRunningChange(true);
-    onLinesChange(() => []);
+    onRunningChange?.(true);
+    onLinesChange?.(() => []);
 
     const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
     const workflow: WorkflowDefinition["workflow"] = sorted.map((node) => {
@@ -248,7 +249,7 @@ export function WorkflowCanvas({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           definition,
-          workflowFile: (selectedFolder ? folderWorkflowFile : selectedFile) || undefined,
+          workflowFile: activeWorkflowFile ?? undefined,
           workingDirectory: selectedFolder ?? undefined,
         }),
       });
@@ -300,14 +301,14 @@ export function WorkflowCanvas({
               line = { text: `${prefix}${toolPrefix}${entry.message}`, level: entry.level };
             }
 
-            onLinesChange((prev) => [...prev, line]);
+            onLinesChange?.((prev) => [...prev, line]);
           } catch {
             // ignore malformed lines
           }
         }
       }
     } catch (error) {
-      onLinesChange((prev) => [
+      onLinesChange?.((prev) => [
         ...prev,
         { text: `[ERROR] ${(error as Error).message}`, level: "error" },
       ]);
@@ -315,13 +316,13 @@ export function WorkflowCanvas({
       setSessionId(null);
       setStopping(false);
       setRunning(false);
-      onRunningChange(false);
+      onRunningChange?.(false);
     }
   }, [
+    activeWorkflowFile,
     onLinesChange,
     onRunningChange,
     running,
-    selectedFile,
     selectedFolder,
     workflowDefinition?.claude_session,
   ]);
@@ -342,16 +343,58 @@ export function WorkflowCanvas({
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
 
-      onLinesChange((prev) => [...prev, { text: "[INFO] Stop signal sent.", level: "info" }]);
+      onLinesChange?.((prev) => [...prev, { text: "[INFO] Stop signal sent.", level: "info" }]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      onLinesChange((prev) => [
+      onLinesChange?.((prev) => [
         ...prev,
         { text: `[ERROR] Failed to stop workflow: ${message}`, level: "error" },
       ]);
       setStopping(false);
     }
   }, [onLinesChange, sessionId, stopping]);
+
+  const persistWorkflow = useCallback(
+    async (targetFilename: string, currentNodes: Node[]) => {
+      const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
+      const definition: WorkflowDefinition = {
+        name: targetFilename.replace(/\.ya?ml$/, ""),
+        workflow: sorted.map((node) => {
+          const d = node.data as StepNodeData;
+          return {
+            name: d.title || "Claude Step",
+            agent: "claude",
+            prompt: d.prompt || "",
+            skip_permission: d.skipPermission ?? false,
+          };
+        }),
+      };
+
+      const claudeSessionMode = resolveClaudeSessionMode(
+        definition.workflow,
+        workflowDefinition?.claude_session,
+      );
+      if (claudeSessionMode) definition.claude_session = claudeSessionMode;
+
+      const content = yamlDump(definition);
+      setSaveStatus("saving");
+
+      const res = await fetch("/api/workflow/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: targetFilename, content }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save workflow.");
+      }
+
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+      onSave?.(targetFilename, content);
+    },
+    [onSave, workflowDefinition?.claude_session],
+  );
 
   const handleModalSave = useCallback(
     async (id: string, title: string, prompt: string, skipPermission: boolean) => {
@@ -365,10 +408,8 @@ export function WorkflowCanvas({
         node.id === id ? { ...node, data: { ...node.data, title, prompt, skipPermission } } : node,
       );
 
-      const sorted = [...currentNodes].sort((a, b) => a.position.x - b.position.x);
-
-      if (!selectedFile) {
-        // No file selected — update node state only, close modal
+      if (!activeWorkflowFile) {
+        // No workflow file selected — update node state only, close modal
         setNodesRef.current((nds) =>
           nds.map((node) =>
             node.id === id
@@ -381,55 +422,39 @@ export function WorkflowCanvas({
         return;
       }
 
-      const definition: WorkflowDefinition = {
-        name: selectedFile.replace(/\.ya?ml$/, ""),
-        workflow: sorted.map((node) => {
-          const d = node.data as StepNodeData;
-          return {
-            name: d.title || "Claude Step",
-            agent: "claude",
-            prompt: d.prompt || "",
-            skip_permission: d.skipPermission ?? false,
-          };
-        }),
-      };
-      const claudeSessionMode = resolveClaudeSessionMode(
-        definition.workflow,
-        workflowDefinition?.claude_session,
-      );
-      if (claudeSessionMode) definition.claude_session = claudeSessionMode;
-
       try {
-        const res = await fetch("/api/workflow/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: selectedFile, content: yamlDump(definition) }),
-        });
+        await persistWorkflow(activeWorkflowFile, currentNodes);
 
-        if (res.ok) {
-          // Persist node state update only after successful save
-          setNodesRef.current((nds) =>
-            nds.map((node) =>
-              node.id === id
-                ? { ...node, data: { ...node.data, title, prompt, skipPermission } }
-                : node,
-            ),
-          );
-          setEditingStepId(null);
-          setSaveStatus("saved");
-          setTimeout(() => setSaveStatus("idle"), 2000);
-          onSave?.(selectedFile, yamlDump(definition));
-        } else {
-          setModalError("Failed to save workflow. Please try again.");
-        }
+        // Persist node state update only after successful save
+        setNodesRef.current((nds) =>
+          nds.map((node) =>
+            node.id === id
+              ? { ...node, data: { ...node.data, title, prompt, skipPermission } }
+              : node,
+          ),
+        );
+        setEditingStepId(null);
       } catch {
-        setModalError("Network error. Please try again.");
+        setSaveStatus("error");
+        setModalError("Failed to save workflow. Please try again.");
       } finally {
         setIsModalSaving(false);
       }
     },
-    [isModalSaving, selectedFile, onSave, workflowDefinition?.claude_session],
+    [activeWorkflowFile, isModalSaving, persistWorkflow],
   );
+
+  const handleSaveWorkflow = useCallback(async () => {
+    if (!activeWorkflowFile || nodesRef.current.length === 0 || saveStatus === "saving") {
+      return;
+    }
+
+    try {
+      await persistWorkflow(activeWorkflowFile, nodesRef.current);
+    } catch {
+      setSaveStatus("error");
+    }
+  }, [activeWorkflowFile, persistWorkflow, saveStatus]);
 
   const editingNode = editingStepId ? nodes.find((n) => n.id === editingStepId) : null;
 
@@ -458,28 +483,38 @@ export function WorkflowCanvas({
           </select>
         )}
 
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        {running ? (
+        {selectedFolder ? (
+          running ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void stopWorkflow()}
+              disabled={!sessionId || stopping}
+              className="border-red-200 text-red-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            >
+              <Square size={11} className="mr-1" />
+              {stopping ? "Stopping…" : "Stop"}
+            </Button>
+          ) : (
+            <Button
+              variant="pink"
+              size="sm"
+              onClick={() => void runWorkflow()}
+              disabled={nodes.length === 0 || !activeWorkflowFile}
+            >
+              <Play size={11} className="mr-1" />
+              Run
+            </Button>
+          )
+        ) : (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void stopWorkflow()}
-            disabled={!sessionId || stopping}
-            className="border-red-200 text-red-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            onClick={() => void handleSaveWorkflow()}
+            disabled={!activeWorkflowFile || nodes.length === 0 || saveStatus === "saving"}
           >
-            <Square size={11} className="mr-1" />
-            {stopping ? "Stopping…" : "Stop"}
-          </Button>
-        ) : (
-          <Button
-            variant="pink"
-            size="sm"
-            onClick={runWorkflow}
-            disabled={nodes.length === 0 || (!!selectedFolder && !folderWorkflowFile)}
-          >
-            <Play size={11} className="mr-1" />
-            Run
+            <Save size={11} className="mr-1" />
+            Save
           </Button>
         )}
 
@@ -514,7 +549,7 @@ export function WorkflowCanvas({
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-placeholder">
           <Clock size={64} strokeWidth={1} />
           <div className="text-sm tracking-wide">
-            {selectedFile
+            {activeWorkflowFile
               ? "Add a step above to start building your workflow"
               : "Load a workflow to display it on canvas"}
           </div>
