@@ -18,12 +18,13 @@ export interface LogLine {
 interface WorkflowCanvasProps {
   graph: WorkflowGraph;
   activeFile?: string | null;
+  readOnly?: boolean;
   onSave?: (filename: string, content: string) => void;
 }
 
 const nodeTypes = { step: StepNode };
 
-export function WorkflowCanvas({ graph, activeFile, onSave }: WorkflowCanvasProps) {
+export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: WorkflowCanvasProps) {
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [isModalSaving, setIsModalSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -40,11 +41,12 @@ export function WorkflowCanvas({ graph, activeFile, onSave }: WorkflowCanvasProp
         ...node,
         data: {
           ...node.data,
+          readOnly,
           onRequestEdit,
           onDelete: graph.deleteNode,
         },
       })),
-    [graph.nodes, onRequestEdit, graph.deleteNode],
+    [graph.nodes, readOnly, onRequestEdit, graph.deleteNode],
   );
 
   const handleModalSave = useCallback(

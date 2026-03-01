@@ -147,7 +147,7 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
               </Button>
             )}
           </div>
-          <WorkflowCanvas graph={graph} activeFile={activeFile} />
+          <WorkflowCanvas graph={graph} activeFile={activeFile} readOnly />
         </div>
       }
       terminal={

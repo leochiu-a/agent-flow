@@ -10,6 +10,7 @@ interface SessionItemProps {
   isLoading: boolean;
   isActive: boolean;
   isDeleting: boolean;
+  readOnly?: boolean;
   onClick: () => void;
   onDelete: (e: MouseEvent) => void;
 }
@@ -20,6 +21,7 @@ export function SessionItem({
   isLoading,
   isActive,
   isDeleting,
+  readOnly,
   onClick,
   onDelete,
 }: SessionItemProps) {
@@ -49,15 +51,17 @@ export function SessionItem({
       </div>
 
       {/* Delete button */}
-      <button
-        type="button"
-        title="Delete session"
-        disabled={isDeleting}
-        onClick={onDelete}
-        className="shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Trash2 size={12} />
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          title="Delete session"
+          disabled={isDeleting}
+          onClick={onDelete}
+          className="shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
     </div>
   );
 }

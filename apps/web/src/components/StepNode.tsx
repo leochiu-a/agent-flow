@@ -10,6 +10,7 @@ export interface StepNodeData {
   type: "claude";
   prompt: string;
   skipPermission?: boolean;
+  readOnly?: boolean;
   onRequestEdit: (id: string) => void;
   onDelete: (id: string) => void;
   [key: string]: unknown;
@@ -48,26 +49,28 @@ export function StepNode({ id, data, selected }: NodeProps) {
           Claude
         </Badge>
 
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            className={`nodrag ${tone.editHover}`}
-            onClick={() => d.onRequestEdit(id)}
-            title="Edit step"
-          >
-            <Pencil />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            className="nodrag hover:text-pink"
-            onClick={() => d.onDelete(id)}
-            title="Delete step"
-          >
-            <X />
-          </Button>
-        </div>
+        {!d.readOnly && (
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className={`nodrag ${tone.editHover}`}
+              onClick={() => d.onRequestEdit(id)}
+              title="Edit step"
+            >
+              <Pencil />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="nodrag hover:text-pink"
+              onClick={() => d.onDelete(id)}
+              title="Delete step"
+            >
+              <X />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Title */}
