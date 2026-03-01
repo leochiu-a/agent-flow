@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { GitHubStarButton } from "@/components/GitHubStarButton";
 
 interface WorkflowLayoutProps {
   sidebar: ReactNode;
@@ -14,7 +15,10 @@ export function WorkflowLayout({ sidebar, canvas, terminal, headerActions }: Wor
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-canvas text-dark">
       <header className="flex h-12 shrink-0 items-center border-b border-border bg-white px-4 shadow-sm">
         <span className="text-sm font-bold tracking-wide text-pink">AGENT FLOW</span>
-        <div className="ml-auto flex items-center gap-2">{headerActions}</div>
+        <div className="ml-auto flex items-center gap-2">
+          {headerActions}
+          <GitHubStarButton />
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
