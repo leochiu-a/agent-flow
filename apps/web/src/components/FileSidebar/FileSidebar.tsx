@@ -54,10 +54,26 @@ export function FileSidebar({
 
   const [folderSessionList, setFolderSessionList] = useState<SessionSummaryWithWorkflow[]>([]);
   const [loadingFolderSessions, setLoadingFolderSessions] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    // Auto-expand the initially selected folder so it doesn't flash
+    if (selectedFolder) return new Set([selectedFolder]);
+    return new Set();
+  });
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
   const [loadingSessionDetail, setLoadingSessionDetail] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+
+  // Auto-expand the selected folder when it changes (e.g. after navigation)
+  useEffect(() => {
+    if (selectedFolder) {
+      setExpandedFolders((prev) => {
+        if (prev.has(selectedFolder)) return prev;
+        const next = new Set(prev);
+        next.add(selectedFolder);
+        return next;
+      });
+    }
+  }, [selectedFolder]);
 
   const persistFolders = (nextFolders: string[]) => {
     setFolders(nextFolders);
@@ -320,7 +336,12 @@ export function FileSidebar({
                       } else {
                         router.push(`/folder/${hashFolderPath(folderPath)}`);
                       }
-                      toggleFolderExpand(folderPath);
+                      // Only toggle expand/collapse if the folder is already selected;
+                      // otherwise the navigation will remount this component and the
+                      // useEffect will auto-expand the newly selected folder.
+                      if (isSelected) {
+                        toggleFolderExpand(folderPath);
+                      }
                     }}
                     className={`group flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
                       isSelected
