@@ -1,0 +1,5 @@
+name: "New Workflow"
+workflow:
+  - name: "Hello World via Claude"
+    agent: claude
+    prompt: "Please run: echo 'Hello from Agent Flow!', then report the output."
