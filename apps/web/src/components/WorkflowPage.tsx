@@ -11,6 +11,7 @@ import type { WorkflowDefinition } from "@agent-flow/core";
 import { hashFolderPath } from "@/utils/folderHash";
 
 const FOLDERS_STORAGE_KEY = "agent-flow.folders";
+const WORKFLOW_DEFINITION_CACHE = new Map<string, WorkflowDefinition>();
 
 interface WorkflowPageProps {
   initialFile?: string;
@@ -23,7 +24,10 @@ export function WorkflowPage({ initialFile, initialFolderId }: WorkflowPageProps
   const [lines, setLines] = useState<LogLine[]>([]);
   const [running, setRunning] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
-  const [workflowDefinition, setWorkflowDefinition] = useState<WorkflowDefinition | null>(null);
+  const [workflowDefinition, setWorkflowDefinition] = useState<WorkflowDefinition | null>(() => {
+    if (!initialFile) return null;
+    return WORKFLOW_DEFINITION_CACHE.get(initialFile) ?? null;
+  });
   const [selectedFile, setSelectedFile] = useState<string | null>(initialFile ?? null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 
@@ -31,14 +35,21 @@ export function WorkflowPage({ initialFile, initialFolderId }: WorkflowPageProps
   useEffect(() => {
     setSelectedFile(initialFile ?? null);
     setSelectedFolder(null);
-    setWorkflowDefinition(null);
 
     if (initialFile) {
+      const cached = WORKFLOW_DEFINITION_CACHE.get(initialFile);
+      if (cached) {
+        setWorkflowDefinition(cached);
+        return;
+      }
+
       fetch(`/api/workflow/read?file=${encodeURIComponent(initialFile)}`)
         .then((res) => res.json())
         .then((data: { content?: string }) => {
           try {
-            setWorkflowDefinition(yamlLoad(data.content ?? "") as WorkflowDefinition);
+            const parsed = yamlLoad(data.content ?? "") as WorkflowDefinition;
+            WORKFLOW_DEFINITION_CACHE.set(initialFile, parsed);
+            setWorkflowDefinition(parsed);
           } catch {
             setWorkflowDefinition(null);
           }
@@ -57,10 +68,19 @@ export function WorkflowPage({ initialFile, initialFolderId }: WorkflowPageProps
       } catch {
         // ignore
       }
+    } else {
+      setWorkflowDefinition(null);
     }
   }, [initialFile, initialFolderId]);
 
-  const handleSelectFile = (filename: string, _content: string) => {
+  const handleSelectFile = (filename: string, content: string) => {
+    try {
+      const parsed = yamlLoad(content ?? "") as WorkflowDefinition;
+      WORKFLOW_DEFINITION_CACHE.set(filename, parsed);
+      setWorkflowDefinition(parsed);
+    } catch {
+      // ignore malformed yaml and let route fetch handle it
+    }
     router.push(`/workflow/${encodeURIComponent(filename)}`);
   };
 
@@ -76,6 +96,16 @@ export function WorkflowPage({ initialFile, initialFolderId }: WorkflowPageProps
     setRunning(nextRunning);
     if (nextRunning) {
       setShowTerminal(true);
+    }
+  };
+
+  const handleSave = (filename: string, content: string) => {
+    try {
+      const parsed = yamlLoad(content) as WorkflowDefinition;
+      WORKFLOW_DEFINITION_CACHE.set(filename, parsed);
+      setWorkflowDefinition(parsed);
+    } catch {
+      // ignore malformed yaml and keep previous cache
     }
   };
 
@@ -114,6 +144,7 @@ export function WorkflowPage({ initialFile, initialFolderId }: WorkflowPageProps
               workflowDefinition={workflowDefinition}
               selectedFile={selectedFile}
               selectedFolder={selectedFolder}
+              onSave={handleSave}
             />
           </div>
 

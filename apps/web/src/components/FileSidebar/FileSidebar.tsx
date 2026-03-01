@@ -20,6 +20,7 @@ interface FileSidebarProps {
 }
 
 const FOLDERS_STORAGE_KEY = "agent-flow.folders";
+let WORKFLOW_FILES_CACHE: string[] | null = null;
 
 function getFolderDisplayName(folderPath: string): string {
   const parts = folderPath.split(/[\\/]/).filter(Boolean);
@@ -52,11 +53,19 @@ export function FileSidebar({
     }
   };
 
-  const fetchFiles = useCallback(async () => {
+  const fetchFiles = useCallback(async (force = false) => {
+    if (!force && WORKFLOW_FILES_CACHE) {
+      setFiles(WORKFLOW_FILES_CACHE);
+      setLoadingFiles(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/workflow/list");
       const data = (await res.json()) as { workflows: string[] };
-      setFiles(data.workflows ?? []);
+      const workflows = data.workflows ?? [];
+      WORKFLOW_FILES_CACHE = workflows;
+      setFiles(workflows);
     } catch {
       // ignore
     } finally {
@@ -244,7 +253,7 @@ export function FileSidebar({
         onClose={() => setShowCreate(false)}
         onCreated={() => {
           setShowCreate(false);
-          void fetchFiles();
+          void fetchFiles(true);
         }}
       />
     </aside>
