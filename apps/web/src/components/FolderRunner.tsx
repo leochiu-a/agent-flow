@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Play, Square } from "lucide-react";
 import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
-import { WorkflowCanvas } from "@/components/WorkflowCanvas";
+import { WorkflowCanvas, type LogLine } from "@/components/WorkflowCanvas";
 import { WorkflowLayout } from "@/components/WorkflowLayout";
 import { useWorkflowDefinitionCache } from "@/hooks/useWorkflowDefinitionCache";
 import { useTerminalPanel } from "@/hooks/useTerminalPanel";
@@ -81,11 +81,20 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cache.workflowDefinition]);
 
+  const handleSelectSession = useCallback(
+    (logLines: LogLine[], _success: boolean) => {
+      terminal.setLines(logLines);
+      terminal.openTerminal();
+    },
+    [terminal],
+  );
+
   return (
     <WorkflowLayout
       sidebar={
         <FileSidebar
           onSelectFile={nav.handleSelectFile}
+          onSelectSession={handleSelectSession}
           selectedFile={null}
           selectedFolder={selectedFolder}
           onSelectFolder={nav.handleSelectFolder}

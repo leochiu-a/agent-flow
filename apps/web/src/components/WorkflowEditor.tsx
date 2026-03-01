@@ -5,7 +5,7 @@ import { AlertCircle, Check, Save } from "lucide-react";
 import { dump as yamlDump } from "js-yaml";
 import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
-import { WorkflowCanvas } from "@/components/WorkflowCanvas";
+import { WorkflowCanvas, type LogLine } from "@/components/WorkflowCanvas";
 import { WorkflowLayout } from "@/components/WorkflowLayout";
 import { useWorkflowDefinitionCache } from "@/hooks/useWorkflowDefinitionCache";
 import { useTerminalPanel } from "@/hooks/useTerminalPanel";
@@ -51,6 +51,14 @@ export function WorkflowEditor({ initialFile }: WorkflowEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cache.workflowDefinition]);
 
+  const handleSelectSession = useCallback(
+    (logLines: LogLine[], _success: boolean) => {
+      terminal.setLines(logLines);
+      terminal.openTerminal();
+    },
+    [terminal],
+  );
+
   const handleSaveWorkflow = useCallback(async () => {
     if (!initialFile) return;
 
@@ -80,6 +88,7 @@ export function WorkflowEditor({ initialFile }: WorkflowEditorProps) {
       sidebar={
         <FileSidebar
           onSelectFile={nav.handleSelectFile}
+          onSelectSession={handleSelectSession}
           selectedFile={initialFile ?? null}
           selectedFolder={null}
           onSelectFolder={nav.handleSelectFolder}

@@ -1,19 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Folder, FolderPlus, Plug, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Folder, FolderPlus, Plug, Plus, Trash2 } from "lucide-react";
 
+import type { LogLine } from "../WorkflowCanvas";
+import { formatDuration } from "../../utils/time";
 import { SidebarHeader } from "./SidebarHeader";
 import { CreateWorkflowDialog } from "./CreateWorkflowDialog";
 import { FolderBrowserDialog } from "./FolderBrowserDialog";
 import { WorkflowItem } from "./WorkflowItem";
+import { SessionItem } from "./SessionItem";
+import type { SessionDetail, SessionSummaryWithWorkflow } from "./types";
 import { Button } from "@/components/ui/button";
 import { hashFolderPath } from "@/utils/folderHash";
 
 interface FileSidebarProps {
   onSelectFile?: (filename: string, content: string) => void;
+  onSelectSession?: (logLines: LogLine[], success: boolean) => void;
   onSelectFolder?: (folderPath: string | null) => void;
   selectedFile?: string | null;
   selectedFolder?: string | null;
@@ -29,6 +34,7 @@ function getFolderDisplayName(folderPath: string): string {
 
 export function FileSidebar({
   onSelectFile,
+  onSelectSession,
   onSelectFolder,
   selectedFile,
   selectedFolder,
@@ -45,6 +51,13 @@ export function FileSidebar({
   const [showCreate, setShowCreate] = useState(false);
   const [showFolderBrowser, setShowFolderBrowser] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(true);
+
+  const [folderSessionList, setFolderSessionList] = useState<SessionSummaryWithWorkflow[]>([]);
+  const [loadingFolderSessions, setLoadingFolderSessions] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [deletingSession, setDeletingSession] = useState<string | null>(null);
+  const [loadingSessionDetail, setLoadingSessionDetail] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   const persistFolders = (nextFolders: string[]) => {
     setFolders(nextFolders);
@@ -73,9 +86,23 @@ export function FileSidebar({
     }
   }, []);
 
+  const fetchFolderSessions = useCallback(async () => {
+    setLoadingFolderSessions(true);
+    try {
+      const res = await fetch("/api/workflow/sessions/all");
+      const data = (await res.json()) as { sessions: SessionSummaryWithWorkflow[] };
+      setFolderSessionList(data.sessions ?? []);
+    } catch {
+      setFolderSessionList([]);
+    } finally {
+      setLoadingFolderSessions(false);
+    }
+  }, []);
+
   useEffect(() => {
     void fetchFiles();
-  }, [fetchFiles]);
+    void fetchFolderSessions();
+  }, [fetchFiles, fetchFolderSessions]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -117,6 +144,86 @@ export function FileSidebar({
     }
     router.push(`/folder/${hashFolderPath(trimmed)}`);
   };
+
+  const toggleFolderExpand = (folderPath: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderPath)) {
+        next.delete(folderPath);
+      } else {
+        next.add(folderPath);
+      }
+      return next;
+    });
+  };
+
+  const handleSessionClick = async (sessionId: string, workflowFile: string) => {
+    if (loadingSessionDetail) return;
+    setLoadingSessionDetail(sessionId);
+    setSelectedSession(sessionId);
+
+    try {
+      const res = await fetch(
+        `/api/workflow/session/${encodeURIComponent(sessionId)}?file=${encodeURIComponent(workflowFile)}`,
+      );
+      if (!res.ok) return;
+
+      const session = (await res.json()) as SessionDetail;
+      const logLines: LogLine[] = session.logs.map((entry) => {
+        const prefix = entry.step ? `[${entry.step}] ` : "";
+        const toolPrefix = entry.level === "tool_use" ? "⚙ " : "";
+        return { text: `${prefix}${toolPrefix}${entry.message}`, level: entry.level };
+      });
+
+      logLines.push({
+        text: `\n── Workflow ${session.success ? "✓ SUCCESS" : "✗ FAILED"} (${formatDuration(session.durationMs)}) ──`,
+        level: session.success ? "info" : "error",
+      });
+
+      onSelectSession?.(logLines, session.success);
+    } finally {
+      setLoadingSessionDetail(null);
+    }
+  };
+
+  const handleDeleteSession = async (e: MouseEvent, sessionId: string, workflowFile: string) => {
+    e.stopPropagation();
+    if (!confirm("Delete this session record?")) return;
+
+    setDeletingSession(sessionId);
+    try {
+      const res = await fetch(
+        `/api/workflow/session/${encodeURIComponent(sessionId)}?file=${encodeURIComponent(workflowFile)}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        alert("Failed to delete. Please try again.");
+        return;
+      }
+
+      setFolderSessionList((prev) =>
+        prev.filter(
+          (session) => !(session.id === sessionId && session.workflowFile === workflowFile),
+        ),
+      );
+    } catch {
+      alert("Failed to delete. Please try again.");
+    } finally {
+      setDeletingSession(null);
+    }
+  };
+
+  const sessionsByFolder = useMemo(() => {
+    const grouped: Record<string, SessionSummaryWithWorkflow[]> = {};
+    for (const session of folderSessionList) {
+      if (!session.workingDirectory) continue;
+      if (!grouped[session.workingDirectory]) {
+        grouped[session.workingDirectory] = [];
+      }
+      grouped[session.workingDirectory]?.push(session);
+    }
+    return grouped;
+  }, [folderSessionList]);
 
   const removeFolder = (folderPath: string) => {
     const nextFolders = folders.filter((folder) => folder !== folderPath);
@@ -197,43 +304,79 @@ export function FileSidebar({
             </div>
           ) : (
             folders.map((folderPath) => {
+              const folderSessions = sessionsByFolder[folderPath] ?? [];
+              const isExpanded = expandedFolders.has(folderPath);
               const folderName = getFolderDisplayName(folderPath);
               const isSelected =
                 selectedFolder === folderPath ||
                 (routeFolderId !== null && hashFolderPath(folderPath) === routeFolderId);
               return (
-                <button
-                  key={folderPath}
-                  type="button"
-                  onClick={() => {
-                    if (onSelectFolder) {
-                      onSelectFolder(folderPath);
-                      return;
-                    }
-                    router.push(`/folder/${hashFolderPath(folderPath)}`);
-                  }}
-                  className={`group flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
-                    isSelected
-                      ? "border-pink bg-pink-subtle text-dark"
-                      : "border-transparent text-ink hover:bg-surface hover:text-dark"
-                  }`}
-                  title={folderName}
-                >
-                  <Folder size={12} className="shrink-0 text-muted-fg" />
-                  <span className="min-w-0 flex-1 truncate">{folderName}</span>
-                  <span
-                    role="button"
-                    tabIndex={-1}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      removeFolder(folderPath);
+                <div key={folderPath}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSelectFolder) {
+                        onSelectFolder(folderPath);
+                      } else {
+                        router.push(`/folder/${hashFolderPath(folderPath)}`);
+                      }
+                      toggleFolderExpand(folderPath);
                     }}
-                    className="rounded p-0.5 text-muted-fg opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
-                    aria-label={`Remove folder ${folderName}`}
+                    className={`group flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
+                      isSelected
+                        ? "border-pink bg-pink-subtle text-dark"
+                        : "border-transparent text-ink hover:bg-surface hover:text-dark"
+                    }`}
+                    title={folderName}
                   >
-                    <Trash2 size={11} />
-                  </span>
-                </button>
+                    <ChevronRight
+                      size={12}
+                      className={`shrink-0 text-muted-fg transition-transform duration-150 ${isExpanded ? "rotate-90" : ""}`}
+                    />
+                    <Folder size={12} className="shrink-0 text-muted-fg" />
+                    <span className="min-w-0 flex-1 truncate">{folderName}</span>
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removeFolder(folderPath);
+                      }}
+                      className="rounded p-0.5 text-muted-fg opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+                      aria-label={`Remove folder ${folderName}`}
+                    >
+                      <Trash2 size={11} />
+                    </span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="ml-4">
+                      {loadingFolderSessions ? (
+                        <div className="px-3 py-2 text-[10px] text-muted-fg">Loading...</div>
+                      ) : folderSessions.length === 0 ? (
+                        <div className="px-3 py-2 text-[10px] text-muted-fg">No sessions</div>
+                      ) : (
+                        folderSessions.map((session) => (
+                          <SessionItem
+                            key={`${session.workflowFile}-${session.id}`}
+                            session={session}
+                            workflowFile={session.workflowFile}
+                            workflowLabel={session.workflowFile}
+                            isLoading={loadingSessionDetail === session.id}
+                            isActive={selectedSession === session.id}
+                            isDeleting={deletingSession === session.id}
+                            onClick={() =>
+                              void handleSessionClick(session.id, session.workflowFile)
+                            }
+                            onDelete={(e) =>
+                              void handleDeleteSession(e, session.id, session.workflowFile)
+                            }
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })
           )}
