@@ -15,7 +15,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { dump as yamlDump } from "js-yaml";
+import { dump as yamlDump, load as yamlLoad } from "js-yaml";
 import type { LogEntry, WorkflowDefinition } from "@agent-flow/core";
 import { StepNode } from "./StepNode";
 import type { StepNodeData } from "./StepNode";
@@ -39,11 +39,6 @@ interface WorkflowCanvasProps {
 const nodeTypes = { step: StepNode };
 
 const newId = () => `step-${crypto.randomUUID().slice(0, 8)}`;
-
-function getFolderDisplayName(folderPath: string): string {
-  const parts = folderPath.split(/[\\/]/).filter(Boolean);
-  return parts[parts.length - 1] ?? folderPath;
-}
 
 function resolveClaudeSessionMode(
   steps: WorkflowDefinition["workflow"],
@@ -73,6 +68,9 @@ export function WorkflowCanvas({
   const [isModalSaving, setIsModalSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  const [workflowFiles, setWorkflowFiles] = useState<string[]>([]);
+  const [folderWorkflowFile, setFolderWorkflowFile] = useState("");
+
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
   const setNodesRef = useRef(setNodes);
@@ -91,17 +89,10 @@ export function WorkflowCanvas({
     setEditingStepId((current) => (current === id ? null : current));
   }, []);
 
-  useEffect(() => {
-    if (!workflowDefinition?.workflow?.length) {
-      setNodes([]);
-      setEdges([]);
-      return;
-    }
-
-    const newNodes: Node[] = workflowDefinition.workflow.map((step, i) => {
-      const id = newId();
-      return {
-        id,
+  const applyWorkflowSteps = useCallback(
+    (steps: WorkflowDefinition["workflow"]) => {
+      const newNodes: Node[] = steps.map((step, i) => ({
+        id: newId(),
         type: "step",
         position: { x: 60 + i * 340, y: 120 },
         data: {
@@ -112,20 +103,64 @@ export function WorkflowCanvas({
           onRequestEdit,
           onDelete,
         },
-      };
-    });
+      }));
+      const newEdges: Edge[] = newNodes.slice(0, -1).map((node, i) => ({
+        id: `e-${node.id}-${newNodes[i + 1]!.id}`,
+        source: node.id,
+        target: newNodes[i + 1]!.id,
+        animated: true,
+        style: { stroke: "var(--color-pink)", strokeWidth: 2 },
+      }));
+      setNodes(newNodes);
+      setEdges(newEdges);
+    },
+    [onRequestEdit, onDelete, setNodes, setEdges],
+  );
 
-    const newEdges: Edge[] = newNodes.slice(0, -1).map((node, i) => ({
-      id: `e-${node.id}-${newNodes[i + 1].id}`,
-      source: node.id,
-      target: newNodes[i + 1].id,
-      animated: true,
-      style: { stroke: "var(--color-pink)", strokeWidth: 2 },
-    }));
+  useEffect(() => {
+    if (!workflowDefinition?.workflow?.length) {
+      setNodes([]);
+      setEdges([]);
+      return;
+    }
+    applyWorkflowSteps(workflowDefinition.workflow);
+  }, [workflowDefinition, applyWorkflowSteps, setNodes, setEdges]);
 
-    setNodes(newNodes);
-    setEdges(newEdges);
-  }, [workflowDefinition, onRequestEdit, onDelete, setNodes, setEdges]);
+  useEffect(() => {
+    fetch("/api/workflow/list")
+      .then((r) => r.json())
+      .then((d: { workflows: string[] }) => setWorkflowFiles(d.workflows ?? []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setFolderWorkflowFile("");
+    if (selectedFolder) {
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [selectedFolder, setNodes, setEdges]);
+
+  const handleFolderWorkflowSelect = useCallback(
+    async (filename: string) => {
+      setFolderWorkflowFile(filename);
+      if (!filename) {
+        setNodes([]);
+        setEdges([]);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/workflow/read?file=${encodeURIComponent(filename)}`);
+        const data = (await res.json()) as { content?: string };
+        const parsed = yamlLoad(data.content ?? "") as WorkflowDefinition;
+        if (parsed?.workflow?.length) applyWorkflowSteps(parsed.workflow);
+      } catch {
+        setNodes([]);
+        setEdges([]);
+      }
+    },
+    [applyWorkflowSteps, setNodes, setEdges],
+  );
 
   const addNode = useCallback(() => {
     const id = newId();
@@ -213,7 +248,7 @@ export function WorkflowCanvas({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           definition,
-          workflowFile: selectedFile ?? undefined,
+          workflowFile: (selectedFolder ? folderWorkflowFile : selectedFile) || undefined,
           workingDirectory: selectedFolder ?? undefined,
         }),
       });
@@ -401,15 +436,27 @@ export function WorkflowCanvas({
   return (
     <div className="relative h-full w-full">
       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
-        <Button variant="pink" size="sm" onClick={addNode} disabled={running}>
-          + Claude Agent
-        </Button>
+        {!selectedFolder && (
+          <Button variant="pink" size="sm" onClick={addNode} disabled={running}>
+            + Claude Agent
+          </Button>
+        )}
 
-        <div className="max-w-[220px] truncate rounded-md bg-surface px-2 py-1 text-[10px] text-ink">
-          {selectedFolder
-            ? `Folder: ${getFolderDisplayName(selectedFolder)}`
-            : "Select a folder to run"}
-        </div>
+        {selectedFolder && (
+          <select
+            value={folderWorkflowFile}
+            onChange={(e) => void handleFolderWorkflowSelect(e.target.value)}
+            disabled={running}
+            className="rounded-md border border-border bg-surface px-2 py-1 text-[10px] text-ink disabled:opacity-50"
+          >
+            <option value="">Select workflow…</option>
+            {workflowFiles.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        )}
 
         <div className="mx-1 h-6 w-px bg-border" />
 
@@ -429,7 +476,7 @@ export function WorkflowCanvas({
             variant="pink"
             size="sm"
             onClick={runWorkflow}
-            disabled={nodes.length === 0 || !selectedFolder}
+            disabled={nodes.length === 0 || (!!selectedFolder && !folderWorkflowFile)}
           >
             <Play size={11} className="mr-1" />
             Run

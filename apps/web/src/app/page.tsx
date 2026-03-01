@@ -22,11 +22,20 @@ export default function Home() {
 
   const handleSelectFile = (filename: string, content: string) => {
     setSelectedFile(filename);
+    setSelectedFolder(null);
     try {
       const parsed = yamlLoad(content) as WorkflowDefinition;
       setWorkflowDefinition(parsed);
     } catch {
       // ignore invalid YAML
+      setWorkflowDefinition(null);
+    }
+  };
+
+  const handleSelectFolder = (folderPath: string | null) => {
+    setSelectedFolder(folderPath);
+    if (folderPath !== null) {
+      setSelectedFile(null);
       setWorkflowDefinition(null);
     }
   };
@@ -73,7 +82,7 @@ export default function Home() {
           runningFile={running ? selectedFile : null}
           selectedFile={selectedFile}
           selectedFolder={selectedFolder}
-          onSelectFolder={setSelectedFolder}
+          onSelectFolder={handleSelectFolder}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
