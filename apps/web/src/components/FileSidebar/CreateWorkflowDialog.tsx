@@ -14,7 +14,7 @@ workflow:
 interface CreateWorkflowDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (filename: string) => void;
 }
 
 export function CreateWorkflowDialog({ open, onClose, onCreated }: CreateWorkflowDialogProps) {
@@ -45,7 +45,13 @@ export function CreateWorkflowDialog({ open, onClose, onCreated }: CreateWorkflo
         return;
       }
 
-      onCreated();
+      const data = (await res.json()) as { filename?: string };
+      if (!data.filename) {
+        setCreateError("Create succeeded but missing filename in response.");
+        return;
+      }
+
+      onCreated(data.filename);
     } catch (error) {
       setCreateError((error as Error).message);
     } finally {

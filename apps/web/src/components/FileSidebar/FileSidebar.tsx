@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Folder, FolderPlus, GitBranch, Plug, Trash2 } from "lucide-react";
+import { Folder, FolderPlus, Plug, Plus, Trash2 } from "lucide-react";
 
 import { SidebarHeader } from "./SidebarHeader";
 import { CreateWorkflowDialog } from "./CreateWorkflowDialog";
@@ -137,15 +137,14 @@ export function FileSidebar({
   return (
     <aside className="flex w-64 shrink-0 flex-col overflow-hidden border-r border-border bg-white">
       <nav className="px-2 py-1.5 flex flex-col gap-0.5">
-        <Link
-          href="/"
-          className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition hover:bg-surface ${
-            pathname === "/" ? "bg-surface font-semibold text-pink" : "text-ink"
-          }`}
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] text-ink transition hover:bg-surface"
         >
-          <GitBranch size={14} className={pathname === "/" ? "text-pink" : "text-muted-fg"} />
-          Workflows
-        </Link>
+          <Plus size={14} className="text-muted-fg" />
+          new workFlow
+        </button>
         <Link
           href="/connectors"
           className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition hover:bg-surface ${
@@ -251,9 +250,10 @@ export function FileSidebar({
       <CreateWorkflowDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}
-        onCreated={() => {
+        onCreated={(filename) => {
           setShowCreate(false);
           void fetchFiles(true);
+          router.push(`/workflow/${encodeURIComponent(filename)}`);
         }}
       />
     </aside>
