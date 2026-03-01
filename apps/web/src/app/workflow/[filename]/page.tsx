@@ -1,9 +1,10 @@
 "use client";
 
 import { use } from "react";
-import { WorkflowPage } from "@/components/WorkflowPage";
+import { WorkflowEditor } from "@/components/WorkflowEditor";
 
 export default function WorkflowFilePage({ params }: { params: Promise<{ filename: string }> }) {
   const { filename } = use(params);
-  return <WorkflowPage initialFile={decodeURIComponent(filename)} />;
+
+  return <WorkflowEditor initialFile={decodeURIComponent(filename)} />;
 }

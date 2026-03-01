@@ -1,9 +1,10 @@
 "use client";
 
 import { use } from "react";
-import { WorkflowPage } from "@/components/WorkflowPage";
+import { FolderRunner } from "@/components/FolderRunner";
 
 export default function FolderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <WorkflowPage initialFolderId={id} />;
+
+  return <FolderRunner initialFolderId={id} />;
 }

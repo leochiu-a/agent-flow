@@ -1,5 +1,5 @@
-import { WorkflowPage } from "@/components/WorkflowPage";
+import { WorkflowEditor } from "@/components/WorkflowEditor";
 
 export default function Home() {
-  return <WorkflowPage />;
+  return <WorkflowEditor />;
 }
