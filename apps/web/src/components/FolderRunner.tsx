@@ -82,9 +82,10 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
   }, [cache.workflowDefinition]);
 
   const handleSelectSession = useCallback(
-    (logLines: LogLine[], _success: boolean) => {
+    (logLines: LogLine[], _success: boolean, workflowFile: string) => {
       terminal.setLines(logLines);
       terminal.openTerminal();
+      setFolderWorkflowFile(workflowFile);
     },
     [terminal],
   );

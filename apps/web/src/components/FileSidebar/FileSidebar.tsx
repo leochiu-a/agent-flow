@@ -18,7 +18,7 @@ import { hashFolderPath } from "@/utils/folderHash";
 
 interface FileSidebarProps {
   onSelectFile?: (filename: string, content: string) => void;
-  onSelectSession?: (logLines: LogLine[], success: boolean) => void;
+  onSelectSession?: (logLines: LogLine[], success: boolean, workflowFile: string) => void;
   onSelectFolder?: (folderPath: string | null) => void;
   selectedFile?: string | null;
   selectedFolder?: string | null;
@@ -180,7 +180,7 @@ export function FileSidebar({
         level: session.success ? "info" : "error",
       });
 
-      onSelectSession?.(logLines, session.success);
+      onSelectSession?.(logLines, session.success, workflowFile);
     } finally {
       setLoadingSessionDetail(null);
     }

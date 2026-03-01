@@ -52,7 +52,7 @@ export function WorkflowEditor({ initialFile }: WorkflowEditorProps) {
   }, [cache.workflowDefinition]);
 
   const handleSelectSession = useCallback(
-    (logLines: LogLine[], _success: boolean) => {
+    (logLines: LogLine[], _success: boolean, _workflowFile: string) => {
       terminal.setLines(logLines);
       terminal.openTerminal();
     },
