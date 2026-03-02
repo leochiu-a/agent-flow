@@ -106,10 +106,12 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
         />
         <Controls
           showInteractive={false}
+          orientation="horizontal"
           style={{
-            background: "#FFFFFF",
+            background: "#ffffff",
             border: "1px solid var(--color-border)",
-            borderRadius: 8,
+            borderRadius: 12,
+            padding: 4,
           }}
         />
       </ReactFlow>
