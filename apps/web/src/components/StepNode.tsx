@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Eye, EyeOff, Pencil, X } from "lucide-react";
+import { Bot, Eye, Pencil, Power, PowerOff, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ export interface StepNodeData {
   onRequestEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onToggleDisabled?: (id: string) => void;
+  onRequestPreview?: (id: string) => void;
   [key: string]: unknown;
 }
 
@@ -52,23 +53,40 @@ export function StepNode({ id, data, selected }: NodeProps) {
           Claude
         </Badge>
 
-        {d.readOnly && d.onToggleDisabled && (
-          <div className="ml-auto">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className="nodrag text-muted-fg hover:text-pink"
-                  onClick={() => d.onToggleDisabled!(id)}
-                >
-                  {d.disabled ? <EyeOff size={14} /> : <Eye size={14} />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {d.disabled ? "Enable step" : "Disable step"}
-              </TooltipContent>
-            </Tooltip>
+        {d.readOnly && (d.onRequestPreview || d.onToggleDisabled) && (
+          <div className="ml-auto flex items-center gap-1">
+            {d.onRequestPreview && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="nodrag text-muted-fg hover:text-pink"
+                    onClick={() => d.onRequestPreview!(id)}
+                  >
+                    <Eye size={14} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">View step</TooltipContent>
+              </Tooltip>
+            )}
+            {d.onToggleDisabled && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="nodrag text-muted-fg hover:text-pink"
+                    onClick={() => d.onToggleDisabled!(id)}
+                  >
+                    {d.disabled ? <PowerOff size={14} /> : <Power size={14} />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {d.disabled ? "Enable step" : "Disable step"}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         )}
 

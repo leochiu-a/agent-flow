@@ -10,6 +10,7 @@ interface StepEditModalProps {
   initialSkipPermission?: boolean;
   saving: boolean;
   error: string | null;
+  readOnly?: boolean;
   onSave: (id: string, title: string, prompt: string, skipPermission: boolean) => void;
   onClose: () => void;
 }
@@ -21,6 +22,7 @@ export function StepEditModal({
   initialSkipPermission,
   saving,
   error,
+  readOnly,
   onSave,
   onClose,
 }: StepEditModalProps) {
@@ -53,6 +55,7 @@ export function StepEditModal({
           initialSkipPermission={initialSkipPermission}
           saving={saving}
           error={error}
+          readOnly={readOnly}
           onSave={handleSave}
           onCancel={onClose}
         />

@@ -25,13 +25,19 @@ interface WorkflowCanvasProps {
 const nodeTypes = { step: StepNode };
 
 export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: WorkflowCanvasProps) {
-  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [modalState, setModalState] = useState<{ stepId: string; mode: "edit" | "preview" } | null>(
+    null,
+  );
   const [isModalSaving, setIsModalSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
   const onRequestEdit = useCallback((id: string) => {
-    setEditingStepId(id);
+    setModalState({ stepId: id, mode: "edit" });
     setModalError(null);
+  }, []);
+
+  const onRequestPreview = useCallback((id: string) => {
+    setModalState({ stepId: id, mode: "preview" });
   }, []);
 
   // Inject UI callbacks into node data for StepNode rendering
@@ -45,9 +51,17 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
           onRequestEdit,
           onDelete: graph.deleteNode,
           onToggleDisabled: readOnly ? graph.toggleNodeDisabled : undefined,
+          onRequestPreview: readOnly ? onRequestPreview : undefined,
         },
       })),
-    [graph.nodes, readOnly, onRequestEdit, graph.deleteNode, graph.toggleNodeDisabled],
+    [
+      graph.nodes,
+      readOnly,
+      onRequestEdit,
+      onRequestPreview,
+      graph.deleteNode,
+      graph.toggleNodeDisabled,
+    ],
   );
 
   const handleModalSave = useCallback(
@@ -61,13 +75,13 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
         onSave(activeFile, yamlDump(graph.getDefinition()));
       }
 
-      setEditingStepId(null);
+      setModalState(null);
       setIsModalSaving(false);
     },
     [activeFile, onSave, graph],
   );
 
-  const editingNode = editingStepId ? graph.nodes.find((n) => n.id === editingStepId) : null;
+  const modalNode = modalState ? graph.nodes.find((n) => n.id === modalState.stepId) : null;
 
   return (
     <div className="relative h-full w-full">
@@ -117,19 +131,18 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
         />
       </ReactFlow>
 
-      {editingNode && (
+      {modalNode && modalState && (
         <StepEditModal
-          stepId={editingStepId!}
-          initialTitle={(editingNode.data as StepNodeData).title}
-          initialPrompt={(editingNode.data as StepNodeData).prompt}
-          initialSkipPermission={(editingNode.data as StepNodeData).skipPermission}
-          saving={isModalSaving}
-          error={modalError}
-          onSave={(id, title, prompt, skipPermission) =>
-            handleModalSave(id, title, prompt, skipPermission)
-          }
+          stepId={modalState.stepId}
+          initialTitle={(modalNode.data as StepNodeData).title}
+          initialPrompt={(modalNode.data as StepNodeData).prompt}
+          initialSkipPermission={(modalNode.data as StepNodeData).skipPermission}
+          saving={modalState.mode === "edit" ? isModalSaving : false}
+          error={modalState.mode === "edit" ? modalError : null}
+          readOnly={modalState.mode === "preview"}
+          onSave={modalState.mode === "edit" ? handleModalSave : () => {}}
           onClose={() => {
-            setEditingStepId(null);
+            setModalState(null);
             setModalError(null);
           }}
         />

@@ -10,6 +10,7 @@ interface ClaudeStepModalProps {
   initialSkipPermission?: boolean;
   saving: boolean;
   error: string | null;
+  readOnly?: boolean;
   onSave: (title: string, prompt: string, skipPermission: boolean) => void;
   onCancel: () => void;
 }
@@ -20,6 +21,7 @@ export function ClaudeStepModal({
   initialSkipPermission = false,
   saving,
   error,
+  readOnly = false,
   onSave,
   onCancel,
 }: ClaudeStepModalProps) {
@@ -60,11 +62,12 @@ export function ClaudeStepModal({
       <label className="flex flex-col gap-1 text-sm text-ink">
         Step name
         <input
-          autoFocus
+          autoFocus={!readOnly}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Step title..."
-          className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-dark outline-none transition placeholder:text-placeholder focus:border-pink"
+          readOnly={readOnly}
+          className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-dark outline-none transition placeholder:text-placeholder focus:border-pink read-only:bg-muted read-only:cursor-default"
         />
       </label>
 
@@ -75,32 +78,43 @@ export function ClaudeStepModal({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Enter prompt for Claude..."
           rows={10}
-          className="resize-y rounded-md border border-border bg-surface px-2.5 py-2 font-mono text-sm leading-relaxed text-dark outline-none transition placeholder:text-placeholder focus:border-pink"
+          readOnly={readOnly}
+          className="resize-y rounded-md border border-border bg-surface px-2.5 py-2 font-mono text-sm leading-relaxed text-dark outline-none transition placeholder:text-placeholder focus:border-pink read-only:bg-muted read-only:cursor-default"
         />
       </label>
 
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="skip-permission"
-          checked={skipPermission}
-          onCheckedChange={(checked) => setSkipPermission(checked === true)}
-          className="data-[state=checked]:bg-pink data-[state=checked]:border-pink"
-        />
-        <label htmlFor="skip-permission" className="cursor-pointer select-none text-sm text-dark">
-          Skip permission check
-          <span className="ml-1 text-muted-fg">(--dangerously-skip-permissions)</span>
-        </label>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="skip-permission"
+            checked={skipPermission}
+            onCheckedChange={(checked) => setSkipPermission(checked === true)}
+            className="data-[state=checked]:bg-pink data-[state=checked]:border-pink"
+          />
+          <label htmlFor="skip-permission" className="cursor-pointer select-none text-sm text-dark">
+            Skip permission check
+            <span className="ml-1 text-muted-fg">(--dangerously-skip-permissions)</span>
+          </label>
+        </div>
+      )}
 
       {displayError && <div className="text-sm text-pink">{displayError}</div>}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={handleCancel}>
-          Cancel
-        </Button>
-        <Button variant="pink" size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save Step"}
-        </Button>
+        {readOnly ? (
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Close
+          </Button>
+        ) : (
+          <>
+            <Button variant="outline" size="sm" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button variant="pink" size="sm" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save Step"}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
