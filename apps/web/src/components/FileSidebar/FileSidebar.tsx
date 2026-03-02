@@ -10,6 +10,7 @@ import { formatDuration } from "../../utils/time";
 import { SidebarHeader } from "./SidebarHeader";
 import { CreateWorkflowDialog } from "./CreateWorkflowDialog";
 import { FolderBrowserDialog } from "./FolderBrowserDialog";
+import { DeleteWorkflowDialog } from "./DeleteWorkflowDialog";
 import { WorkflowItem } from "./WorkflowItem";
 import { SessionItem } from "./SessionItem";
 import type { SessionDetail, SessionSummaryWithWorkflow } from "./types";
@@ -31,6 +32,7 @@ interface FileSidebarProps {
 }
 
 const FOLDERS_STORAGE_KEY = "agent-flow.folders";
+const DELETE_FAILED_MESSAGE = "Failed to delete. Please try again.";
 let WORKFLOW_FILES_CACHE: string[] | null = null;
 
 function getFolderDisplayName(folderPath: string): string {
@@ -68,6 +70,8 @@ export function FileSidebar({
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
   const [loadingSessionDetail, setLoadingSessionDetail] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [workflowToDelete, setWorkflowToDelete] = useState<string | null>(null);
+  const [deletingWorkflow, setDeletingWorkflow] = useState<string | null>(null);
 
   // Auto-expand the selected folder when it changes (e.g. after navigation)
   useEffect(() => {
@@ -219,7 +223,7 @@ export function FileSidebar({
         { method: "DELETE" },
       );
       if (!res.ok) {
-        alert("Failed to delete. Please try again.");
+        alert(DELETE_FAILED_MESSAGE);
         return;
       }
 
@@ -229,9 +233,42 @@ export function FileSidebar({
         ),
       );
     } catch {
-      alert("Failed to delete. Please try again.");
+      alert(DELETE_FAILED_MESSAGE);
     } finally {
       setDeletingSession(null);
+    }
+  };
+
+  const handleDeleteWorkflow = async () => {
+    if (!workflowToDelete || deletingWorkflow) return;
+
+    const target = workflowToDelete;
+    setDeletingWorkflow(target);
+
+    try {
+      const res = await fetch(`/api/workflow/delete?file=${encodeURIComponent(target)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        alert(DELETE_FAILED_MESSAGE);
+        return;
+      }
+
+      setFiles((prev) => {
+        const next = prev.filter((filename) => filename !== target);
+        WORKFLOW_FILES_CACHE = next;
+        return next;
+      });
+
+      if (selectedFile === target) {
+        router.push("/");
+      }
+
+      setWorkflowToDelete(null);
+    } catch {
+      alert(DELETE_FAILED_MESSAGE);
+    } finally {
+      setDeletingWorkflow(null);
     }
   };
 
@@ -300,7 +337,12 @@ export function FileSidebar({
               key={filename}
               filename={filename}
               isSelected={selectedFile === filename}
+              isDeleting={deletingWorkflow === filename}
               onWorkflowClick={() => void selectFile(filename)}
+              onDelete={(event) => {
+                event.stopPropagation();
+                setWorkflowToDelete(filename);
+              }}
             />
           ))
         )}
@@ -425,6 +467,18 @@ export function FileSidebar({
           void fetchFiles(true);
           router.push(`/workflow/${encodeURIComponent(filename)}`);
         }}
+      />
+
+      <DeleteWorkflowDialog
+        open={workflowToDelete !== null}
+        workflowName={workflowToDelete}
+        isDeleting={Boolean(deletingWorkflow)}
+        onOpenChange={(open) => {
+          if (!open && !deletingWorkflow) {
+            setWorkflowToDelete(null);
+          }
+        }}
+        onConfirmDelete={() => void handleDeleteWorkflow()}
       />
     </aside>
   );
