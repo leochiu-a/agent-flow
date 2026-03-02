@@ -4,6 +4,7 @@ import { Bot, Eye, EyeOff, Pencil, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface StepNodeData {
   title: string;
@@ -53,15 +54,21 @@ export function StepNode({ id, data, selected }: NodeProps) {
 
         {d.readOnly && d.onToggleDisabled && (
           <div className="ml-auto">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="nodrag text-muted-fg hover:text-pink"
-              onClick={() => d.onToggleDisabled!(id)}
-              title={d.disabled ? "Enable step" : "Disable step"}
-            >
-              {d.disabled ? <EyeOff size={14} /> : <Eye size={14} />}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="nodrag text-muted-fg hover:text-pink"
+                  onClick={() => d.onToggleDisabled!(id)}
+                >
+                  {d.disabled ? <EyeOff size={14} /> : <Eye size={14} />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {d.disabled ? "Enable step" : "Disable step"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
 
