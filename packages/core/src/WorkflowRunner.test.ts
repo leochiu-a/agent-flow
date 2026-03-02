@@ -280,6 +280,143 @@ workflow:
   }
 });
 
+test("run() with initialClaudeSessionId resumes from provided session on first step in shared mode", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-initial-session-"));
+  const claudePath = path.join(tmpDir, "claude");
+  const argsLogPath = path.join(tmpDir, "claude-args.log");
+
+  await writeFile(
+    claudePath,
+    `#!/bin/sh
+prev=""
+resume=""
+for arg in "$@"; do
+  printf '%s\\n' "$arg" >> "$CLAUDE_ARGS_LOG"
+  if [ "$prev" = "--resume" ]; then
+    resume="$arg"
+  fi
+  prev="$arg"
+done
+printf '__END__\\n' >> "$CLAUDE_ARGS_LOG"
+sid="\${resume:-session-new}"
+printf '{"type":"system","subtype":"init","session_id":"%s"}\\n' "$sid"
+printf '{"type":"result","total_cost_usd":0,"session_id":"%s"}\\n' "$sid"
+`,
+    "utf-8",
+  );
+  await chmod(claudePath, 0o755);
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_ARGS_LOG: argsLogPath,
+      },
+    });
+
+    const result = await runner.run(
+      {
+        name: "continue-shared",
+        claude_session: "shared",
+        workflow: [
+          { name: "step-a", agent: "claude", prompt: "first" },
+          { name: "step-b", agent: "claude", prompt: "second" },
+        ],
+      },
+      { initialClaudeSessionId: "prev-session-42" },
+    );
+
+    assert.equal(result.success, true);
+    const segments = (await readFile(argsLogPath, "utf-8"))
+      .trim()
+      .split("__END__")
+      .map((segment) => segment.trim().split("\n").filter(Boolean))
+      .filter((segment) => segment.length > 0);
+
+    // First step should --resume the provided initial session ID
+    const first = segments[0] ?? [];
+    const resumeIdx0 = first.indexOf("--resume");
+    assert.ok(resumeIdx0 >= 0, "first step should have --resume flag");
+    assert.equal(first[resumeIdx0 + 1], "prev-session-42");
+
+    // Second step should --resume the session ID returned by the first step
+    const second = segments[1] ?? [];
+    const resumeIdx1 = second.indexOf("--resume");
+    assert.ok(resumeIdx1 >= 0, "second step should have --resume flag");
+    assert.equal(second[resumeIdx1 + 1], "prev-session-42");
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("initialClaudeSessionId is ignored in isolated mode", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-initial-isolated-"));
+  const claudePath = path.join(tmpDir, "claude");
+  const argsLogPath = path.join(tmpDir, "claude-args.log");
+
+  await writeFile(
+    claudePath,
+    `#!/bin/sh
+for arg in "$@"; do
+  printf '%s\\n' "$arg" >> "$CLAUDE_ARGS_LOG"
+done
+printf '__END__\\n' >> "$CLAUDE_ARGS_LOG"
+printf '{"type":"system","subtype":"init","session_id":"session-1"}\\n'
+printf '{"type":"result","total_cost_usd":0,"session_id":"session-1"}\\n'
+`,
+    "utf-8",
+  );
+  await chmod(claudePath, 0o755);
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_ARGS_LOG: argsLogPath,
+      },
+    });
+
+    const result = await runner.run(
+      {
+        name: "isolated-with-initial",
+        workflow: [{ name: "step", agent: "claude", prompt: "hello" }],
+      },
+      { initialClaudeSessionId: "should-be-ignored" },
+    );
+
+    assert.equal(result.success, true);
+    const args = (await readFile(argsLogPath, "utf-8")).trim();
+    assert.equal(args.includes("--resume"), false, "isolated mode should not use --resume");
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("getClaudeSessionId() returns the session ID after run", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-get-session-"));
+  await createMockClaudeBinary(tmpDir);
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+      },
+    });
+
+    assert.equal(runner.getClaudeSessionId(), null, "should be null before run");
+
+    await runner.run({
+      name: "get-session-test",
+      claude_session: "shared",
+      workflow: [{ name: "step", agent: "claude", prompt: "hello" }],
+    });
+
+    assert.equal(runner.getClaudeSessionId(), "session-1", "should return captured session ID");
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test("uses configured cwd when spawning Claude", async () => {
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-cwd-"));
   await createMockClaudeBinary(tmpDir);

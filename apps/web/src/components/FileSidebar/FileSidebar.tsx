@@ -13,12 +13,18 @@ import { FolderBrowserDialog } from "./FolderBrowserDialog";
 import { WorkflowItem } from "./WorkflowItem";
 import { SessionItem } from "./SessionItem";
 import type { SessionDetail, SessionSummaryWithWorkflow } from "./types";
+import type { LastRunResult } from "@/hooks/useWorkflowRunner";
 import { Button } from "@/components/ui/button";
 import { hashFolderPath } from "@/utils/folderHash";
 
 interface FileSidebarProps {
   onSelectFile?: (filename: string, content: string) => void;
-  onSelectSession?: (logLines: LogLine[], success: boolean, workflowFile: string) => void;
+  onSelectSession?: (
+    logLines: LogLine[],
+    success: boolean,
+    workflowFile: string,
+    runResult?: LastRunResult,
+  ) => void;
   onSelectFolder?: (folderPath: string | null) => void;
   selectedFile?: string | null;
   selectedFolder?: string | null;
@@ -196,7 +202,10 @@ export function FileSidebar({
         level: session.success ? "info" : "error",
       });
 
-      onSelectSession?.(logLines, session.success, workflowFile);
+      onSelectSession?.(logLines, session.success, workflowFile, {
+        steps: session.result.steps,
+        claudeSessionId: session.claudeSessionId,
+      });
     } finally {
       setLoadingSessionDetail(null);
     }

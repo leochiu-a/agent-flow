@@ -1,6 +1,13 @@
 import type { WorkflowRunner } from "@agent-flow/core";
 
-const registry = new Map<string, WorkflowRunner>();
+const globalForRegistry = globalThis as unknown as {
+  __agentFlowRunnerRegistry?: Map<string, WorkflowRunner>;
+};
+
+const registry = (globalForRegistry.__agentFlowRunnerRegistry ??= new Map<
+  string,
+  WorkflowRunner
+>());
 
 export function registerRunner(sessionId: string, runner: WorkflowRunner): void {
   registry.set(sessionId, runner);

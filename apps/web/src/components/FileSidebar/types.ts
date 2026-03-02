@@ -28,6 +28,7 @@ export interface SessionDetail {
     success: boolean;
     steps: Array<{ name: string; success: boolean; exitCode: number | null }>;
   };
+  claudeSessionId?: string;
 }
 
 export interface SessionSummaryWithWorkflow extends SessionSummary {

@@ -13,10 +13,12 @@ export async function POST(req: NextRequest) {
     definition,
     workflowFile: wfFile,
     workingDirectory: wd,
+    initialClaudeSessionId,
   } = (await req.json()) as {
     definition: WorkflowDefinition;
     workflowFile?: string;
     workingDirectory?: string;
+    initialClaudeSessionId?: string;
   };
 
   const workflowFile = wfFile ?? "__unsaved__";
@@ -72,10 +74,10 @@ export async function POST(req: NextRequest) {
 
       runner.on("done", (result: WorkflowResult) => {
         const endedAt = Date.now();
+        const claudeSessionId = runner?.getClaudeSessionId() ?? undefined;
         unregisterRunner(sessionId);
-        enqueueLine({ type: "done", ...result });
+        enqueueLine({ type: "done", ...result, claudeSessionId });
         closeStream();
-        runner = null;
 
         writeSession({
           id: sessionId,
@@ -89,10 +91,12 @@ export async function POST(req: NextRequest) {
           trigger: "manual",
           logs,
           result,
+          claudeSessionId,
         }).catch((err: Error) => console.error("[session] write error:", err));
+        runner = null;
       });
 
-      runner.run(definition).catch((err: Error) => {
+      runner.run(definition, { initialClaudeSessionId }).catch((err: Error) => {
         unregisterRunner(sessionId);
         enqueueLine({ type: "error", message: err.message });
         closeStream();

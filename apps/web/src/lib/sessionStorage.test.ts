@@ -82,6 +82,40 @@ test("write/list/get/delete session flow", async () => {
   });
 });
 
+test("claudeSessionId is persisted and retrievable", async () => {
+  await withTempCwd(async () => {
+    const session = buildSession({
+      id: "s-with-claude-session",
+      claudeSessionId: "claude-sess-abc",
+    });
+
+    await writeSession(session);
+
+    const detail = await getSession("demo.yaml", "s-with-claude-session");
+    assert.ok(detail);
+    assert.equal(detail.claudeSessionId, "claude-sess-abc");
+
+    const summaries = await listSessions("demo.yaml");
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0]?.claudeSessionId, "claude-sess-abc");
+  });
+});
+
+test("claudeSessionId is undefined when not provided", async () => {
+  await withTempCwd(async () => {
+    const session = buildSession({ id: "s-no-claude-session" });
+
+    await writeSession(session);
+
+    const detail = await getSession("demo.yaml", "s-no-claude-session");
+    assert.ok(detail);
+    assert.equal(detail.claudeSessionId, undefined);
+
+    const summaries = await listSessions("demo.yaml");
+    assert.equal(summaries[0]?.claudeSessionId, undefined);
+  });
+});
+
 test("workflow and session names are sanitized to stay in project storage", async () => {
   await withTempCwd(async (cwd) => {
     const record = buildSession({

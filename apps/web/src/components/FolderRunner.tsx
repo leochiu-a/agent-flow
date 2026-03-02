@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Play, Square } from "lucide-react";
+import { Play, RotateCcw, Square } from "lucide-react";
 import { FileSidebar } from "@/components/FileSidebar/FileSidebar";
 import { TerminalPanel } from "@/components/TerminalPanel";
 import { WorkflowCanvas, type LogLine } from "@/components/WorkflowCanvas";
@@ -9,7 +9,7 @@ import { WorkflowLayout } from "@/components/WorkflowLayout";
 import { useWorkflowDefinitionCache } from "@/hooks/useWorkflowDefinitionCache";
 import { useTerminalPanel } from "@/hooks/useTerminalPanel";
 import { useNavigation } from "@/hooks/useNavigation";
-import { useWorkflowRunner } from "@/hooks/useWorkflowRunner";
+import { useWorkflowRunner, type LastRunResult } from "@/hooks/useWorkflowRunner";
 import { useWorkflowGraph } from "@/hooks/useWorkflowGraph";
 import { hashFolderPath } from "@/utils/folderHash";
 import { Button } from "@/components/ui/button";
@@ -89,13 +89,33 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
   }, [cache.workflowDefinition]);
 
   const handleSelectSession = useCallback(
-    (logLines: LogLine[], _success: boolean, workflowFile: string) => {
+    (logLines: LogLine[], _success: boolean, workflowFile: string, runResult?: LastRunResult) => {
       terminal.setLines(logLines);
       terminal.openTerminal();
       setFolderWorkflowFile(workflowFile);
+      if (runResult) {
+        runner.setLastRunResult(runResult);
+      }
     },
-    [terminal],
+    [terminal, runner],
   );
+
+  // Continue is available whenever there's a previous run result.
+  // The user controls which steps to skip via disable toggles (eye icon).
+  const canContinue = !runner.running && runner.lastRunResult !== null;
+
+  const handleContinue = useCallback(() => {
+    if (!runner.lastRunResult || !activeFile) return;
+
+    // getDefinition() already filters out disabled steps
+    void runner.runWorkflow({
+      definition: graph.getDefinition(),
+      workflowFile: activeFile,
+      workingDirectory: selectedFolder ?? undefined,
+      initialClaudeSessionId: runner.lastRunResult.claudeSessionId,
+      appendOutput: true,
+    });
+  }, [runner, graph, activeFile, selectedFolder]);
 
   return (
     <WorkflowLayout
@@ -113,7 +133,10 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
           <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
             <Select
               value={folderWorkflowFile || undefined}
-              onValueChange={setFolderWorkflowFile}
+              onValueChange={(v) => {
+                setFolderWorkflowFile(v);
+                runner.clearLastRun();
+              }}
               disabled={runner.running}
             >
               <SelectTrigger size="sm" className="min-w-[140px] text-xs">
@@ -140,21 +163,34 @@ export function FolderRunner({ initialFolderId }: FolderRunnerProps) {
                 {runner.stopping ? "Stopping…" : "Stop"}
               </Button>
             ) : (
-              <Button
-                variant="pink"
-                size="sm"
-                onClick={() =>
-                  void runner.runWorkflow({
-                    definition: graph.getDefinition(),
-                    workflowFile: activeFile ?? undefined,
-                    workingDirectory: selectedFolder ?? undefined,
-                  })
-                }
-                disabled={graph.nodeCount === 0 || !activeFile}
-              >
-                <Play size={11} className="mr-1" />
-                Run
-              </Button>
+              <div className="flex items-center gap-1.5">
+                {canContinue && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleContinue}
+                    disabled={graph.nodeCount === 0 || !activeFile}
+                  >
+                    <RotateCcw size={11} className="mr-1" />
+                    Continue
+                  </Button>
+                )}
+                <Button
+                  variant="pink"
+                  size="sm"
+                  onClick={() =>
+                    void runner.runWorkflow({
+                      definition: graph.getDefinition(),
+                      workflowFile: activeFile ?? undefined,
+                      workingDirectory: selectedFolder ?? undefined,
+                    })
+                  }
+                  disabled={graph.nodeCount === 0 || !activeFile}
+                >
+                  <Play size={11} className="mr-1" />
+                  {canContinue ? "Run New" : "Run"}
+                </Button>
+              </div>
             )}
           </div>
           <WorkflowCanvas graph={graph} activeFile={activeFile} readOnly />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { LogEntry, WorkflowDefinition } from "@agent-flow/core";
+import type { LogEntry, StepResult, WorkflowDefinition } from "@agent-flow/core";
 import type { LogLine } from "@/components/WorkflowCanvas";
 
 export function resolveClaudeSessionMode(
@@ -22,22 +22,45 @@ interface RunOptions {
   definition: WorkflowDefinition;
   workflowFile?: string;
   workingDirectory?: string;
+  initialClaudeSessionId?: string;
+  appendOutput?: boolean;
+}
+
+export interface LastRunResult {
+  steps: StepResult[];
+  claudeSessionId?: string;
 }
 
 export function useWorkflowRunner({ onLinesChange, onRunningChange }: UseWorkflowRunnerOptions) {
   const [running, setRunning] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [stopping, setStopping] = useState(false);
+  const [lastRunResult, setLastRunResult] = useState<LastRunResult | null>(null);
+
+  const clearLastRun = useCallback(() => setLastRunResult(null), []);
 
   const runWorkflow = useCallback(
-    async ({ definition, workflowFile, workingDirectory }: RunOptions) => {
+    async ({
+      definition,
+      workflowFile,
+      workingDirectory,
+      initialClaudeSessionId,
+      appendOutput,
+    }: RunOptions) => {
       if (running) return;
 
       setRunning(true);
       setStopping(false);
       setSessionId(null);
       onRunningChange?.(true);
-      onLinesChange?.(() => []);
+      if (appendOutput) {
+        onLinesChange?.((prev) => [
+          ...prev,
+          { text: "\n── Continuing workflow ──", level: "info" },
+        ]);
+      } else {
+        onLinesChange?.(() => []);
+      }
 
       try {
         const res = await fetch("/api/workflow/run-definition", {
@@ -47,6 +70,7 @@ export function useWorkflowRunner({ onLinesChange, onRunningChange }: UseWorkflo
             definition,
             workflowFile: workflowFile ?? undefined,
             workingDirectory: workingDirectory ?? undefined,
+            initialClaudeSessionId: initialClaudeSessionId ?? undefined,
           }),
         });
 
@@ -80,6 +104,10 @@ export function useWorkflowRunner({ onLinesChange, onRunningChange }: UseWorkflo
               let line: LogLine;
 
               if (parsed.type === "done") {
+                const steps = (parsed.steps as StepResult[]) ?? [];
+                const claudeSessionId = parsed.claudeSessionId as string | undefined;
+                setLastRunResult({ steps, claudeSessionId });
+
                 line = {
                   text: `\n── Workflow ${parsed.success ? "✓ SUCCESS" : "✗ FAILED"} ──`,
                   level: parsed.success ? "info" : "error",
@@ -141,5 +169,14 @@ export function useWorkflowRunner({ onLinesChange, onRunningChange }: UseWorkflo
     }
   }, [onLinesChange, sessionId, stopping]);
 
-  return { running, sessionId, stopping, runWorkflow, stopWorkflow };
+  return {
+    running,
+    sessionId,
+    stopping,
+    runWorkflow,
+    stopWorkflow,
+    lastRunResult,
+    setLastRunResult,
+    clearLastRun,
+  };
 }

@@ -16,6 +16,10 @@ export interface RunnerOptions {
   cwd?: string;
 }
 
+export interface RunOptions {
+  initialClaudeSessionId?: string;
+}
+
 export class WorkflowRunner extends EventEmitter {
   private aborted = false;
   private currentChild: ChildProcess | null = null;
@@ -53,9 +57,13 @@ export class WorkflowRunner extends EventEmitter {
     return this.run(definition);
   }
 
-  async run(definition: WorkflowDefinition): Promise<WorkflowResult> {
+  getClaudeSessionId(): string | null {
+    return this.lastClaudeSessionId;
+  }
+
+  async run(definition: WorkflowDefinition, options?: RunOptions): Promise<WorkflowResult> {
     this.claudeSessionMode = definition.claude_session ?? "isolated";
-    this.lastClaudeSessionId = null;
+    this.lastClaudeSessionId = options?.initialClaudeSessionId ?? null;
     this.log("info", `Starting workflow: ${definition.name}`);
     const stepResults: StepResult[] = [];
 

@@ -15,6 +15,7 @@ export interface SessionRecord {
   trigger: "manual" | "api";
   logs: LogEntry[];
   result: WorkflowResult;
+  claudeSessionId?: string;
 }
 
 export interface SessionSummary {
@@ -24,6 +25,7 @@ export interface SessionSummary {
   endedAt: number;
   durationMs: number;
   success: boolean;
+  claudeSessionId?: string;
 }
 
 export interface SessionSummaryWithWorkflow extends SessionSummary {
@@ -74,6 +76,7 @@ export async function listSessions(workflowFile: string): Promise<SessionSummary
           endedAt: record.endedAt,
           durationMs: record.durationMs,
           success: record.success,
+          claudeSessionId: record.claudeSessionId,
         });
       } catch {
         console.warn(`[sessions] Skipping corrupted session file: ${entry}`);
@@ -113,6 +116,7 @@ export async function listAllSessions(): Promise<SessionSummaryWithWorkflow[]> {
             endedAt: record.endedAt,
             durationMs: record.durationMs,
             success: record.success,
+            claudeSessionId: record.claudeSessionId,
           });
         } catch {
           console.warn(`[sessions] Skipping corrupted session file: ${entry}`);
