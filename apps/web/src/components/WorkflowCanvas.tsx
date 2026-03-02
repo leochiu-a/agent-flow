@@ -44,9 +44,10 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
           readOnly,
           onRequestEdit,
           onDelete: graph.deleteNode,
+          onToggleDisabled: readOnly ? graph.toggleNodeDisabled : undefined,
         },
       })),
-    [graph.nodes, readOnly, onRequestEdit, graph.deleteNode],
+    [graph.nodes, readOnly, onRequestEdit, graph.deleteNode, graph.toggleNodeDisabled],
   );
 
   const handleModalSave = useCallback(

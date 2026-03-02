@@ -38,6 +38,7 @@ export interface WorkflowGraph {
     id: string,
     data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission">>,
   ) => void;
+  toggleNodeDisabled: (id: string) => void;
 
   // Load workflow
   loadDefinition: (definition: WorkflowDefinition | null) => void;
@@ -118,8 +119,21 @@ export function useWorkflowGraph({
     [],
   );
 
+  const toggleNodeDisabled = useCallback((id: string) => {
+    const updater = (nds: Node[]) =>
+      nds.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, disabled: !(node.data as StepNodeData).disabled } }
+          : node,
+      );
+    setNodesRef.current(updater);
+    nodesRef.current = updater(nodesRef.current);
+  }, []);
+
   const getDefinition = useCallback((): WorkflowDefinition => {
-    const sorted = [...nodesRef.current].sort((a, b) => a.position.x - b.position.x);
+    const sorted = [...nodesRef.current]
+      .filter((node) => !(node.data as StepNodeData).disabled)
+      .sort((a, b) => a.position.x - b.position.x);
     const workflow: WorkflowDefinition["workflow"] = sorted.map((node) => {
       const d = node.data as StepNodeData;
       return {
@@ -185,6 +199,7 @@ export function useWorkflowGraph({
     nodeCount: nodes.length,
     deleteNode,
     updateNode,
+    toggleNodeDisabled,
     loadDefinition,
   };
 }

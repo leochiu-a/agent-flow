@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Pencil, X } from "lucide-react";
+import { Bot, Eye, EyeOff, Pencil, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ export interface StepNodeData {
   type: "claude";
   prompt: string;
   skipPermission?: boolean;
+  disabled?: boolean;
   readOnly?: boolean;
   onRequestEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onToggleDisabled?: (id: string) => void;
   [key: string]: unknown;
 }
 
@@ -29,7 +31,7 @@ export function StepNode({ id, data, selected }: NodeProps) {
 
   return (
     <div
-      className={`w-[280px] rounded-xl border-2 p-3.5 shadow-md shadow-black/8 transition ${tone.card} ${selected ? tone.focus : ""}`}
+      className={`w-[280px] rounded-xl border-2 p-3.5 shadow-md shadow-black/8 transition ${tone.card} ${selected ? tone.focus : ""} ${d.disabled ? "opacity-40" : ""}`}
     >
       <Handle
         type="target"
@@ -48,6 +50,20 @@ export function StepNode({ id, data, selected }: NodeProps) {
           <Bot />
           Claude
         </Badge>
+
+        {d.readOnly && d.onToggleDisabled && (
+          <div className="ml-auto">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="nodrag text-muted-fg hover:text-pink"
+              onClick={() => d.onToggleDisabled!(id)}
+              title={d.disabled ? "Enable step" : "Disable step"}
+            >
+              {d.disabled ? <EyeOff size={14} /> : <Eye size={14} />}
+            </Button>
+          </div>
+        )}
 
         {!d.readOnly && (
           <div className="ml-auto flex items-center gap-1">
