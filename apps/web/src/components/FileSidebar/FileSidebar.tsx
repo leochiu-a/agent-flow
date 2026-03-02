@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Folder, FolderPlus, Plug, Plus, Trash2 } from "lucide-react";
@@ -211,10 +211,7 @@ export function FileSidebar({
     }
   };
 
-  const handleDeleteSession = async (e: MouseEvent, sessionId: string, workflowFile: string) => {
-    e.stopPropagation();
-    if (!confirm("Delete this session record?")) return;
-
+  const handleDeleteSession = async (sessionId: string, workflowFile: string) => {
     setDeletingSession(sessionId);
     try {
       const res = await fetch(
@@ -398,8 +395,8 @@ export function FileSidebar({
                             onClick={() =>
                               void handleSessionClick(session.id, session.workflowFile)
                             }
-                            onDelete={(e) =>
-                              void handleDeleteSession(e, session.id, session.workflowFile)
+                            onDelete={() =>
+                              void handleDeleteSession(session.id, session.workflowFile)
                             }
                           />
                         ))

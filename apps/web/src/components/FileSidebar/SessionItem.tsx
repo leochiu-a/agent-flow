@@ -1,7 +1,18 @@
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { Trash2 } from "lucide-react";
 import { formatTime, formatDuration } from "../../utils/time";
 import type { SessionSummary } from "./types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SessionItemProps {
   session: SessionSummary;
@@ -12,7 +23,7 @@ interface SessionItemProps {
   isDeleting: boolean;
   readOnly?: boolean;
   onClick: () => void;
-  onDelete: (e: MouseEvent) => void;
+  onDelete: () => void;
 }
 
 export function SessionItem({
@@ -25,6 +36,8 @@ export function SessionItem({
   onClick,
   onDelete,
 }: SessionItemProps) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div
       role="button"
@@ -50,17 +63,42 @@ export function SessionItem({
         <div className="text-[9px] text-muted-fg">{formatDuration(session.durationMs)}</div>
       </div>
 
-      {/* Delete button */}
+      {/* Delete button with AlertDialog */}
       {!readOnly && (
-        <button
-          type="button"
-          title="Delete session"
-          disabled={isDeleting}
-          onClick={onDelete}
-          className="shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Trash2 size={12} />
-        </button>
+        <AlertDialog open={open} onOpenChange={setOpen}>
+          <AlertDialogTrigger asChild>
+            <button
+              type="button"
+              title="Delete session"
+              disabled={isDeleting}
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+              }}
+              className="shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 size={12} />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent size="sm" onClick={(e: MouseEvent) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this session?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. Are you sure you want to delete this session record?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => {
+                  onDelete();
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
