@@ -1,51 +1,104 @@
-import { listConnectors, loadSecret, loadJiraTokenBundle } from "@/lib/connectorStorage";
+import { listConnectors } from "@/lib/connectorStorage";
 import { logConnectorEvent } from "@/lib/connectorLogger";
+import {
+  getJiraMcpEnv,
+  getSlackMcpEnv,
+  registerJiraMcp,
+  registerSlackMcp,
+  unregisterJiraMcp,
+  unregisterSlackMcp,
+} from "@/lib/claudeSettingsManager";
 
 /**
- * Load all connected connector secrets and return them as env vars.
- * Supports Slack (SLACK_BOT_TOKEN) and Jira (JIRA_SITE_URL, JIRA_USER_EMAIL, JIRA_API_TOKEN).
- * Errors are logged but non-fatal — the runner still starts without that token.
+ * Synchronize Claude MCP entries from connector state.
+ * No connector secrets are injected into workflow process environment.
  */
 export async function loadConnectorEnv(): Promise<NodeJS.ProcessEnv> {
   const connectors = await listConnectors();
-  // Keep the runtime payload minimal (only connector vars), while avoiding
-  // over-constraining to required framework-specific ProcessEnv keys.
-  const env: Partial<NodeJS.ProcessEnv> = {};
+  const connectedSlack = connectors.find((connector) => {
+    return connector.type === "slack" && connector.status === "connected";
+  });
+  const connectedJira = connectors.find((connector) => {
+    return connector.type === "jira" && connector.status === "connected";
+  });
 
-  for (const connector of connectors) {
-    if (connector.status !== "connected") continue;
+  // Keep MCP server registration in sync with connector state.
+  try {
+    if (connectedSlack?.type === "slack") {
+      const slackEnv = await getSlackMcpEnv();
+      const teamId = connectedSlack.workspace.teamId;
 
-    try {
-      if (connector.type === "slack") {
-        env["SLACK_BOT_TOKEN"] = await loadSecret(connector.id);
-        logConnectorEvent({
-          event: "connector_context",
-          connectionId: connector.id,
-          result: "success",
-        });
-      } else if (connector.type === "jira") {
-        const bundle = await loadJiraTokenBundle(connector.id);
-        env["JIRA_SITE_URL"] = connector.workspace.siteUrl;
-        env["JIRA_USER_EMAIL"] = connector.workspace.email;
-        env["JIRA_API_TOKEN"] = bundle.apiToken;
-        logConnectorEvent({
-          provider: "jira",
-          event: "connector_context",
-          connectionId: connector.id,
-          result: "success",
+      // Ensure user-scope registration is always present before workflow run.
+      if (slackEnv?.SLACK_BOT_TOKEN && teamId) {
+        await registerSlackMcp({
+          botToken: slackEnv.SLACK_BOT_TOKEN,
+          teamId,
+          channelIds: slackEnv.SLACK_CHANNEL_IDS,
         });
       }
-    } catch {
+
+      if (!slackEnv?.SLACK_BOT_TOKEN || !slackEnv.SLACK_TEAM_ID) {
+        logConnectorEvent({
+          event: "connector_error",
+          connectionId: connectedSlack.id,
+          result: "failed",
+          errorType: "CONFIG_ERROR",
+          message: "Slack MCP is not registered. Reconnect Slack to refresh token.",
+        });
+      }
+
       logConnectorEvent({
-        provider: connector.type === "jira" ? "jira" : "slack",
-        event: "connector_error",
-        connectionId: connector.id,
-        result: "failed",
-        errorType: "RUNTIME_ERROR",
-        message: "Failed to inject connector env — skipping",
+        event: "connector_context",
+        connectionId: connectedSlack.id,
+        result: "success",
       });
     }
+    if (connectedJira?.type === "jira") {
+      const jiraEnv = await getJiraMcpEnv();
+
+      // Ensure user-scope registration is always present before workflow run.
+      if (jiraEnv?.ATLASSIAN_API_TOKEN) {
+        await registerJiraMcp({
+          siteUrl: connectedJira.workspace.siteUrl,
+          userEmail: connectedJira.workspace.email,
+          apiToken: jiraEnv.ATLASSIAN_API_TOKEN,
+        });
+      }
+
+      if (!jiraEnv?.ATLASSIAN_API_TOKEN) {
+        logConnectorEvent({
+          provider: "jira",
+          event: "connector_error",
+          connectionId: connectedJira.id,
+          result: "failed",
+          errorType: "CONFIG_ERROR",
+          message: "Jira MCP is not registered. Reconnect Jira to refresh token.",
+        });
+      }
+
+      logConnectorEvent({
+        provider: "jira",
+        event: "connector_context",
+        connectionId: connectedJira.id,
+        result: "success",
+      });
+    }
+
+    // Only remove stale MCP entries. Creation/update happens during connect flows.
+    if (!connectedSlack) {
+      await unregisterSlackMcp();
+    }
+    if (!connectedJira) {
+      await unregisterJiraMcp();
+    }
+  } catch {
+    logConnectorEvent({
+      event: "connector_error",
+      result: "failed",
+      errorType: "RUNTIME_ERROR",
+      message: "Failed to sync MCP settings",
+    });
   }
 
-  return env as NodeJS.ProcessEnv;
+  return {} as NodeJS.ProcessEnv;
 }

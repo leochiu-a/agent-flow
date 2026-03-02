@@ -99,6 +99,9 @@ export class WorkflowRunner extends EventEmitter {
         args.push("--resume", this.lastClaudeSessionId);
         this.log("info", `Resuming Claude session: ${this.lastClaudeSessionId}`, step.name);
       }
+      // Explicitly load user/project/local settings so MCP servers configured in
+      // Claude Code are consistently available across execution contexts.
+      args.push("--setting-sources", "user,project,local");
       args.push("--output-format", "stream-json", "--verbose");
       args.push("--print", step.prompt);
 

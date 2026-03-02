@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getConnector, updateConnectorStatus, deleteSecret } from "@/lib/connectorStorage";
+import { getConnector, listConnectors, updateConnectorStatus } from "@/lib/connectorStorage";
 import { logConnectorEvent } from "@/lib/connectorLogger";
+import { unregisterJiraMcp } from "@/lib/claudeSettingsManager";
 
 export const runtime = "nodejs";
 
@@ -21,18 +22,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Connector not found" }, { status: 404 });
   }
 
-  if (purgeSecret) {
-    await deleteSecret(connectionId);
-  }
-
   await updateConnectorStatus(connectionId, "disconnected");
+
+  // Keep Jira MCP registration aligned with connected Jira connectors.
+  const connectors = await listConnectors();
+  const connectedJira = connectors.find((c) => c.type === "jira" && c.status === "connected");
+  if (!connectedJira) {
+    await unregisterJiraMcp();
+  }
 
   logConnectorEvent({
     provider: "jira",
     event: "connector_oauth_callback",
     connectionId,
     result: "success",
-    message: purgeSecret ? "disconnected and secret purged" : "disconnected (secret retained)",
+    message: purgeSecret ? "disconnected" : "disconnected",
   });
 
   return NextResponse.json({ connectionId, status: "disconnected", purgeSecret });

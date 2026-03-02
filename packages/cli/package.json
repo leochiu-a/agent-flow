@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "bin": {
-    "agent-flow": "./dist/index.js"
+    "agent-flow": "./dist/index.mjs"
   },
   "scripts": {
     "build": "tsdown",

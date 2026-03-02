@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { consumeOAuthState } from "@/lib/oauthStateStore";
-import { upsertConnector, saveSecret } from "@/lib/connectorStorage";
+import { upsertConnector } from "@/lib/connectorStorage";
 import { logConnectorEvent } from "@/lib/connectorLogger";
 import { registerSlackMcp } from "@/lib/claudeSettingsManager";
 import { getSlackOAuthConfig } from "@/lib/appConfig";
@@ -139,8 +139,6 @@ export async function GET(req: NextRequest) {
   // Persist the connector record (reuse a stable ID per workspace if one exists)
   const connectionId = oauthData.team?.id ? `conn_slack_${oauthData.team.id}` : "conn_slack_main";
 
-  const secretRef = await saveSecret(connectionId, oauthData.access_token);
-
   const record: SlackConnectorRecord = {
     id: connectionId,
     type: "slack",
@@ -151,20 +149,17 @@ export async function GET(req: NextRequest) {
       teamName: oauthData.team?.name,
       botUserId: oauthData.bot_user_id,
     },
-    mcpProfile: {
-      serverName: "slack",
-      transport: "stdio",
-    },
-    secretRef,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
 
   await upsertConnector(record);
 
-  // Register the Slack MCP server in .claude/settings.json so Claude Code
-  // automatically picks it up when spawned — no env injection required.
-  await registerSlackMcp(oauthData.access_token);
+  // Register the Slack MCP server in Claude user config using standard
+  // command/args/env so Claude Code can auto-start it.
+  if (oauthData.team?.id) {
+    await registerSlackMcp({ botToken: oauthData.access_token, teamId: oauthData.team.id });
+  }
 
   logConnectorEvent({
     event: "connector_oauth_callback",

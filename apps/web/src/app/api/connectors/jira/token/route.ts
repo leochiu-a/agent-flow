@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { upsertConnector, saveJiraTokenBundle } from "@/lib/connectorStorage";
+import { upsertConnector } from "@/lib/connectorStorage";
 import { logConnectorEvent } from "@/lib/connectorLogger";
-import type { JiraConnectorRecord, JiraTokenBundle } from "@/lib/connectorStorage";
+import { registerJiraMcp } from "@/lib/claudeSettingsManager";
+import type { JiraConnectorRecord } from "@/lib/connectorStorage";
 
 export const runtime = "nodejs";
 
@@ -89,15 +90,6 @@ export async function POST(req: NextRequest) {
   const siteKey = normalizedSiteUrl.replace(/^https?:\/\//, "").replace(/[^a-zA-Z0-9]/g, "_");
   const connectionId = `conn_jira_${siteKey}`;
 
-  const bundle: JiraTokenBundle = {
-    version: 2,
-    provider: "jira",
-    authMode: "manual",
-    apiToken: apiToken.trim(),
-  };
-
-  const secretRef = await saveJiraTokenBundle(connectionId, bundle);
-
   const connectorName = name?.trim() || `Jira — ${parsedUrl.hostname}`;
 
   const record: JiraConnectorRecord = {
@@ -112,13 +104,17 @@ export async function POST(req: NextRequest) {
       accountId: myself.accountId,
       displayName: myself.displayName,
     },
-    secretRef,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     lastCheckedAt: Date.now(),
   };
 
   await upsertConnector(record);
+  await registerJiraMcp({
+    siteUrl: normalizedSiteUrl,
+    userEmail: email.trim(),
+    apiToken: apiToken.trim(),
+  });
 
   logConnectorEvent({
     provider: "jira",

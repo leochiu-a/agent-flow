@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getConnector, loadJiraTokenBundle, updateConnectorStatus } from "@/lib/connectorStorage";
+import { getConnector, updateConnectorStatus } from "@/lib/connectorStorage";
+import { getJiraMcpEnv } from "@/lib/claudeSettingsManager";
 import { logConnectorEvent } from "@/lib/connectorLogger";
 import type { JiraConnectorRecord } from "@/lib/connectorStorage";
 
@@ -51,25 +52,15 @@ export async function POST(req: NextRequest) {
 
   const jiraConnector = connector as JiraConnectorRecord;
 
-  let apiToken: string;
-  try {
-    const bundle = await loadJiraTokenBundle(connectionId);
-    apiToken = bundle.apiToken;
-  } catch {
-    logConnectorEvent({
-      provider: "jira",
-      event: "connector_error",
-      connectionId,
-      result: "failed",
-      errorType: "AUTH_ERROR",
-      message: "Failed to load Jira token",
-    });
+  const jiraEnv = await getJiraMcpEnv();
+  const apiToken = jiraEnv?.ATLASSIAN_API_TOKEN;
+  if (!apiToken) {
     await updateConnectorStatus(connectionId, "error", {
       lastCheckedAt: Date.now(),
-      lastError: "Failed to decrypt token",
+      lastError: "Missing ATLASSIAN_API_TOKEN in MCP settings",
     });
     return NextResponse.json(
-      { connectionId, ok: false, error: "Failed to load token" },
+      { connectionId, ok: false, error: "Missing Jira MCP token in Claude local project config" },
       { status: 500 },
     );
   }

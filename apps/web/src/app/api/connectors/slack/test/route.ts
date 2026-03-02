@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getConnector, loadSecret, updateConnectorStatus } from "@/lib/connectorStorage";
+import { getConnector, updateConnectorStatus } from "@/lib/connectorStorage";
+import { getSlackMcpEnv } from "@/lib/claudeSettingsManager";
 import { logConnectorEvent } from "@/lib/connectorLogger";
 
 export const runtime = "nodejs";
@@ -50,23 +51,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let token: string;
-  try {
-    token = await loadSecret(connectionId);
-  } catch {
-    logConnectorEvent({
-      event: "connector_error",
-      connectionId,
-      result: "failed",
-      errorType: "AUTH_ERROR",
-      message: "Failed to load connector secret",
-    });
+  const slackEnv = await getSlackMcpEnv();
+  const token = slackEnv?.SLACK_BOT_TOKEN;
+  if (!token) {
     await updateConnectorStatus(connectionId, "error", {
       lastCheckedAt: Date.now(),
-      lastError: "Failed to decrypt secret",
+      lastError: "Missing SLACK_BOT_TOKEN in MCP settings",
     });
     return NextResponse.json(
-      { connectionId, ok: false, error: "Failed to load token" },
+      { connectionId, ok: false, error: "Missing Slack MCP token in Claude local project config" },
       { status: 500 },
     );
   }

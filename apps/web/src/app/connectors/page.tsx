@@ -61,15 +61,14 @@ export default function ConnectorsPage() {
           <div className="mt-6 rounded-lg border border-border bg-surface px-4 py-3 text-[11px] text-ink">
             <div className="font-semibold text-dark">How it works</div>
             <div className="mt-1 leading-relaxed">
-              <strong>Slack</strong> — Token is written to{" "}
-              <code className="text-pink">.claude/settings.json</code> as an MCP server config.
-              Claude Code starts the Slack MCP server automatically on each workflow step.
+              <strong>Slack</strong> — MCP server registration is written to{" "}
+              <code className="text-pink">Claude user config (~/.claude.json)</code> with standard{" "}
+              <code className="text-pink">command/args/env</code>.
             </div>
             <div className="mt-1 leading-relaxed">
-              <strong>Jira</strong> — API token is encrypted and stored locally. Workflow steps
-              receive <code className="text-pink">JIRA_SITE_URL</code>,{" "}
-              <code className="text-pink">JIRA_USER_EMAIL</code>, and{" "}
-              <code className="text-pink">JIRA_API_TOKEN</code> as environment variables.
+              <strong>Jira</strong> — MCP server registration is written to{" "}
+              <code className="text-pink">Claude user config (~/.claude.json)</code> with standard{" "}
+              <code className="text-pink">command/args/env</code>.
             </div>
           </div>
         </div>

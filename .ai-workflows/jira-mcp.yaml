@@ -1,7 +1,9 @@
 name: jira-mcp
-claude_session: shared
 workflow:
   - name: list jira projects
     agent: claude
-    prompt: Get a random jira ticket
+    prompt: >-
+      Use the Jira MCP tools to list projects. Return total count and the first
+      50 projects.
     skip_permission: true
+claude_session: shared

@@ -3,7 +3,7 @@
  * Useful for local POC where you just want to paste an xoxb-... token directly.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { upsertConnector, saveSecret } from "@/lib/connectorStorage";
+import { upsertConnector } from "@/lib/connectorStorage";
 import { registerSlackMcp } from "@/lib/claudeSettingsManager";
 import { logConnectorEvent } from "@/lib/connectorLogger";
 import type { SlackConnectorRecord } from "@/lib/connectorStorage";
@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
   }
 
   const connectionId = authData.team_id ? `conn_slack_${authData.team_id}` : "conn_slack_main";
-  const secretRef = await saveSecret(connectionId, token);
 
   const record: SlackConnectorRecord = {
     id: connectionId,
@@ -65,14 +64,14 @@ export async function POST(req: NextRequest) {
       teamName: authData.team,
       botUserId: authData.user_id,
     },
-    mcpProfile: { serverName: "slack", transport: "stdio" },
-    secretRef,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
 
   await upsertConnector(record);
-  await registerSlackMcp(token);
+  if (authData.team_id) {
+    await registerSlackMcp({ botToken: token, teamId: authData.team_id });
+  }
 
   logConnectorEvent({ event: "connector_oauth_callback", connectionId, result: "success" });
 
