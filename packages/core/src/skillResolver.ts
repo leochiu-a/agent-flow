@@ -5,6 +5,9 @@ import yaml from "js-yaml";
 
 const SAFE_SKILL_NAME = /^[a-zA-Z0-9_-]+$/;
 
+/** Treat both real directories and symlinks-to-directories as traversable entries. */
+const isTraversable = (e: import("node:fs").Dirent) => e.isDirectory() || e.isSymbolicLink();
+
 export function isValidSkillName(name: string): boolean {
   return SAFE_SKILL_NAME.test(name);
 }
@@ -106,7 +109,7 @@ export async function listSkills(homeDir?: string): Promise<SkillInfo[]> {
     const entries = await readdir(userSkillsDir, { withFileTypes: true });
     const results = await Promise.all(
       entries
-        .filter((e) => e.isDirectory())
+        .filter((e) => isTraversable(e))
         .map(async (entry) => {
           const info = await readSkillMd(path.join(userSkillsDir, entry.name), entry.name);
           return info ? ([entry.name, { ...info, source: "user" as const }] as const) : null;
@@ -124,7 +127,7 @@ export async function listSkills(homeDir?: string): Promise<SkillInfo[]> {
   try {
     const marketplaces = await readdir(marketplacesDir, { withFileTypes: true });
     for (const marketplace of marketplaces) {
-      if (!marketplace.isDirectory()) continue;
+      if (!isTraversable(marketplace)) continue;
       const pluginsDir = path.join(marketplacesDir, marketplace.name, "plugins");
       let plugins: import("node:fs").Dirent[];
       try {
@@ -133,7 +136,7 @@ export async function listSkills(homeDir?: string): Promise<SkillInfo[]> {
         continue;
       }
       for (const plugin of plugins) {
-        if (!plugin.isDirectory()) continue;
+        if (!isTraversable(plugin)) continue;
         const skillsDir = path.join(pluginsDir, plugin.name, "skills");
         let skillEntries: import("node:fs").Dirent[];
         try {
@@ -142,7 +145,7 @@ export async function listSkills(homeDir?: string): Promise<SkillInfo[]> {
           continue;
         }
         const reads = skillEntries
-          .filter((e) => e.isDirectory() && !skills.has(e.name))
+          .filter((e) => isTraversable(e) && !skills.has(e.name))
           .map(async (entry) => {
             const info = await readSkillMd(path.join(skillsDir, entry.name), entry.name);
             return info ? ([entry.name, { ...info, source: "plugin" as const }] as const) : null;

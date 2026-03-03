@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { SkillInfo } from "@agent-flow/core";
 import {
   Combobox,
   ComboboxInput,
@@ -9,8 +7,7 @@ import {
   ComboboxList,
   ComboboxItem,
 } from "@/components/ui/combobox";
-
-let cachedSkills: SkillInfo[] | null = null;
+import { useSkillList } from "@/hooks/useSkillList";
 
 interface SkillComboboxProps {
   value: string | undefined;
@@ -19,20 +16,7 @@ interface SkillComboboxProps {
 }
 
 export function SkillCombobox({ value, onChange, disabled }: SkillComboboxProps) {
-  const [skills, setSkills] = useState<SkillInfo[]>(cachedSkills ?? []);
-
-  useEffect(() => {
-    if (cachedSkills) return;
-    const controller = new AbortController();
-    fetch("/api/skills/list", { signal: controller.signal })
-      .then((res) => res.json())
-      .then((data: { skills: SkillInfo[] }) => {
-        cachedSkills = data.skills;
-        setSkills(data.skills);
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
+  const skills = useSkillList();
 
   return (
     <Combobox value={value ?? null} onValueChange={(val) => onChange(val ?? undefined)}>

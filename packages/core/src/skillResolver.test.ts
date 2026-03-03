@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, test } from "vitest";
@@ -295,6 +295,33 @@ describe("listSkills", () => {
       assert.equal(skills.length, 1);
       assert.equal(skills[0]!.name, "my-skill");
       assert.equal(skills[0]!.description, "");
+    } finally {
+      await teardown();
+    }
+  });
+
+  test("discovers symlinked skill directories", async () => {
+    const home = await setup();
+    try {
+      // Create actual skill directory outside of .claude/skills
+      const realDir = path.join(home, "external-skills", "tdd");
+      await mkdir(realDir, { recursive: true });
+      await writeFile(
+        path.join(realDir, "SKILL.md"),
+        "---\nname: test-driven-development\ndescription: TDD workflow\n---",
+        "utf-8",
+      );
+
+      // Create symlink inside .claude/skills pointing to it
+      const skillsDir = path.join(home, ".claude", "skills");
+      await mkdir(skillsDir, { recursive: true });
+      await symlink(realDir, path.join(skillsDir, "test-driven-development"));
+
+      const skills = await listSkills(home);
+      assert.equal(skills.length, 1);
+      assert.equal(skills[0]!.name, "test-driven-development");
+      assert.equal(skills[0]!.description, "TDD workflow");
+      assert.equal(skills[0]!.source, "user");
     } finally {
       await teardown();
     }

@@ -14,12 +14,14 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
+import { useSkillList } from "@/hooks/useSkillList";
 
 interface NodeItem {
   id: string;
   label: string;
   description: string;
   icon: FC<SVGProps<SVGSVGElement>>;
+  requiredSkill?: string;
 }
 
 const NODE_LIST: NodeItem[] = [
@@ -35,6 +37,7 @@ const NODE_LIST: NodeItem[] = [
     label: "TDD Implementation",
     description: "Test-driven development workflow",
     icon: ClaudeIcon,
+    requiredSkill: "test-driven-development",
   },
   {
     id: "send-slack-message",
@@ -52,6 +55,9 @@ interface AddNodeDrawerProps {
 export function AddNodeDrawer({ onAddNode, disabled }: AddNodeDrawerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const skills = useSkillList();
+
+  const skillNames = useMemo(() => new Set(skills.map((s) => s.name)), [skills]);
 
   const filteredList = useMemo(() => {
     if (!search.trim()) return NODE_LIST;
@@ -62,6 +68,7 @@ export function AddNodeDrawer({ onAddNode, disabled }: AddNodeDrawerProps) {
   }, [search]);
 
   const handleSelectNode = (item: NodeItem) => {
+    if (item.requiredSkill && !skillNames.has(item.requiredSkill)) return;
     onAddNode(item.id);
     setOpen(false);
     setSearch("");
@@ -104,22 +111,31 @@ export function AddNodeDrawer({ onAddNode, disabled }: AddNodeDrawerProps) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
-            {filteredList.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleSelectNode(item)}
-                className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition hover:border-pink/40 hover:bg-pink-subtle"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-pink/10 text-pink">
-                  <item.icon className="size-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-dark">{item.label}</div>
-                  <div className="text-[11px] text-muted-fg">{item.description}</div>
-                </div>
-              </button>
-            ))}
+            {filteredList.map((item) => {
+              const missingSkill = item.requiredSkill && !skillNames.has(item.requiredSkill);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSelectNode(item)}
+                  disabled={!!missingSkill}
+                  className={`flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition ${missingSkill ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-pink/40 hover:bg-pink-subtle"}`}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-pink/10 text-pink">
+                    <item.icon className="size-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-dark">{item.label}</div>
+                    <div className="text-[11px] text-muted-fg">{item.description}</div>
+                    {missingSkill && (
+                      <div className="mt-0.5 text-[11px] text-amber-600">
+                        Requires skill: {item.requiredSkill}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
             {filteredList.length === 0 && (
               <div className="py-8 text-center text-sm text-muted-fg">
                 No nodes match your search

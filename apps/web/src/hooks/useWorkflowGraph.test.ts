@@ -298,6 +298,46 @@ test("loadDefinition restores slack node from metadata.job", () => {
   assert.equal(data.slackMessage, "Hello world");
 });
 
+// --- TDD node tests ---
+
+test("addNode with tdd-implementation creates claude node with skill preset", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  act(() => {
+    result.current.addNode("tdd-implementation");
+  });
+
+  const node = result.current.nodes[0]!;
+  const data = node.data as { type: string; job: string; title: string; skill: string };
+  assert.equal(data.type, "claude");
+  assert.equal(data.job, "tdd-implementation");
+  assert.equal(data.title, "TDD Implementation");
+  assert.equal(data.skill, "test-driven-development");
+});
+
+test("getDefinition includes skill for tdd-implementation node", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  act(() => {
+    result.current.addNode("tdd-implementation");
+  });
+
+  const nodeId = result.current.nodes[0]!.id;
+
+  act(() => {
+    result.current.updateNode(nodeId, {
+      title: "TDD Implementation",
+      prompt: "Implement feature with TDD",
+    });
+  });
+
+  const def = result.current.getDefinition();
+  const step = def.workflow[0]!;
+  assert.equal(step.agent, "claude");
+  assert.equal(step.skill, "test-driven-development");
+  assert.ok(step.prompt.includes("Implement feature with TDD"));
+});
+
 test("updateNode supports slackChannel and slackMessage fields", () => {
   const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
 

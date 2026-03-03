@@ -1,8 +1,15 @@
 /* @vitest-environment jsdom */
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeAll, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
+
+// Mock SVG imports to avoid JSDOM InvalidCharacterError with inline SVG data URIs
+vi.mock("@/assets/slack.svg", () => ({ default: (props: object) => <svg {...props} /> }));
+vi.mock("@/assets/claude.svg", () => ({ default: (props: object) => <svg {...props} /> }));
+vi.mock("@/assets/atlassian.svg", () => ({ default: (props: object) => <svg {...props} /> }));
+
 import { AddNodeDrawer } from "./AddNodeDrawer";
+import { _resetSkillCache } from "@/hooks/useSkillList";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 function renderDrawer(props: { onAddNode: (jobId: string) => void; disabled?: boolean }) {
@@ -31,6 +38,15 @@ beforeAll(() => {
       e.preventDefault();
     }
   });
+  // Default: return empty skills list so existing tests are unaffected
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ json: () => Promise.resolve({ skills: [] }) }),
+  );
+});
+
+beforeEach(() => {
+  _resetSkillCache();
 });
 
 afterEach(cleanup);
@@ -106,4 +122,43 @@ test("shows empty state when no nodes match search", async () => {
   await user.click(screen.getByTitle("Add node"));
   await user.type(screen.getByPlaceholderText("Search nodes..."), "xyz");
   expect(screen.getByText("No nodes match your search")).toBeTruthy();
+});
+
+test("disables TDD node when required skill is not installed", async () => {
+  vi.mocked(fetch).mockResolvedValueOnce({
+    json: () => Promise.resolve({ skills: [] }),
+  } as Response);
+
+  const onAddNode = vi.fn();
+  const user = userEvent.setup({ pointerEventsCheck: 0 });
+  renderDrawer({ onAddNode });
+  await user.click(screen.getByTitle("Add node"));
+  // Wait for fetch to resolve
+  await screen.findByText("Requires skill: test-driven-development");
+  const tddButton = screen.getByText("TDD Implementation").closest("button")!;
+  expect(tddButton.disabled).toBe(true);
+  await user.click(tddButton);
+  expect(onAddNode).not.toHaveBeenCalled();
+});
+
+test("enables TDD node when required skill is installed", async () => {
+  vi.mocked(fetch).mockResolvedValueOnce({
+    json: () =>
+      Promise.resolve({
+        skills: [{ name: "test-driven-development", description: "TDD", source: "plugin" }],
+      }),
+  } as Response);
+
+  const onAddNode = vi.fn();
+  const user = userEvent.setup({ pointerEventsCheck: 0 });
+  renderDrawer({ onAddNode });
+  await user.click(screen.getByTitle("Add node"));
+  // Wait for skills fetch
+  await vi.waitFor(() => {
+    const tddButton = screen.getByText("TDD Implementation").closest("button")!;
+    expect(tddButton.disabled).toBe(false);
+  });
+  expect(screen.queryByText("Requires skill: test-driven-development")).toBeNull();
+  await user.click(screen.getByText("TDD Implementation"));
+  expect(onAddNode).toHaveBeenCalledWith("tdd-implementation");
 });

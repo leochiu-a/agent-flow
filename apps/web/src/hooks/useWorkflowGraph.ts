@@ -106,6 +106,7 @@ export function useWorkflowGraph({
 
       const isJira = jobId === "get-jira-ticket";
       const isSlack = jobId === "send-slack-message";
+      const isTdd = jobId === "tdd-implementation";
 
       let nodeData: Record<string, unknown>;
       if (isJira) {
@@ -125,6 +126,15 @@ export function useWorkflowGraph({
           prompt: "",
           slackChannel: "",
           slackMessage: "",
+          skipPermission: false,
+        };
+      } else if (isTdd) {
+        nodeData = {
+          title: titleForJob(jobId),
+          type: "claude",
+          job: "tdd-implementation",
+          prompt: "",
+          skill: "test-driven-development",
           skipPermission: false,
         };
       } else {
