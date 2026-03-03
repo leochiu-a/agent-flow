@@ -100,11 +100,11 @@ export function SlackStepModal({
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-ink">
-        Message
+        Prompt
         <textarea
           value={slackMessage}
           onChange={(e) => setSlackMessage(e.target.value)}
-          placeholder="Message to send..."
+          placeholder="Enter prompt for Claude..."
           rows={4}
           readOnly={readOnly}
           className="resize-y rounded-md border border-border bg-surface px-2.5 py-2 font-mono text-sm leading-relaxed text-dark outline-none transition placeholder:text-placeholder focus:border-slack read-only:bg-muted read-only:cursor-default"

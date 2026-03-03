@@ -21,7 +21,7 @@ test("renders step name, channel and message fields", () => {
 
   expect(screen.getByPlaceholderText("Step title...")).toBeTruthy();
   expect(screen.getByPlaceholderText("e.g. #general or C01234567")).toBeTruthy();
-  expect(screen.getByPlaceholderText("Message to send...")).toBeTruthy();
+  expect(screen.getByPlaceholderText("Enter prompt for Claude...")).toBeTruthy();
 });
 
 test("calls onSave with form data including slackChannel and slackMessage", async () => {

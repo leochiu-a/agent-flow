@@ -41,8 +41,8 @@ const NODE_LIST: NodeItem[] = [
   },
   {
     id: "send-slack-message",
-    label: "Send Slack Message",
-    description: "Post messages to Slack channels",
+    label: "Send PR for Review",
+    description: "Create a PR and post to Slack for review",
     icon: SlackIcon,
   },
 ];

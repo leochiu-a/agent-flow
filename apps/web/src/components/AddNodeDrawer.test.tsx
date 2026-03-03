@@ -75,7 +75,7 @@ test("shows all job items in flat list", async () => {
   expect(screen.getByText("Claude Agent")).toBeTruthy();
   expect(screen.getByText("Get Jira Ticket")).toBeTruthy();
   expect(screen.getByText("TDD Implementation")).toBeTruthy();
-  expect(screen.getByText("Send Slack Message")).toBeTruthy();
+  expect(screen.getByText("Send PR for Review")).toBeTruthy();
 });
 
 test("calls onAddNode with 'claude-agent' when Claude Agent is clicked", async () => {
@@ -96,12 +96,12 @@ test("calls onAddNode with 'get-jira-ticket' when Get Jira Ticket is clicked", a
   expect(onAddNode).toHaveBeenCalledWith("get-jira-ticket");
 });
 
-test("calls onAddNode with 'send-slack-message' when Send Slack Message is clicked", async () => {
+test("calls onAddNode with 'send-slack-message' when Send PR for Review is clicked", async () => {
   const onAddNode = vi.fn();
   const user = userEvent.setup({ pointerEventsCheck: 0 });
   renderDrawer({ onAddNode });
   await user.click(screen.getByTitle("Add node"));
-  await user.click(screen.getByText("Send Slack Message"));
+  await user.click(screen.getByText("Send PR for Review"));
   expect(onAddNode).toHaveBeenCalledWith("send-slack-message");
 });
 
@@ -113,7 +113,7 @@ test("filters nodes by search text", async () => {
   expect(screen.getByText("Get Jira Ticket")).toBeTruthy();
   expect(screen.queryByText("Claude Agent")).toBeNull();
   expect(screen.queryByText("TDD Implementation")).toBeNull();
-  expect(screen.queryByText("Send Slack Message")).toBeNull();
+  expect(screen.queryByText("Send PR for Review")).toBeNull();
 });
 
 test("shows empty state when no nodes match search", async () => {

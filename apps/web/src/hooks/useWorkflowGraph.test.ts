@@ -195,7 +195,7 @@ test("updateNode supports jiraTicket field", () => {
 
 // --- Slack node tests ---
 
-test("addNode with send-slack-message creates node with type slack and job", () => {
+test("addNode with send-slack-message creates node with type slack, job and PR review title", () => {
   const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
 
   act(() => {
@@ -203,10 +203,12 @@ test("addNode with send-slack-message creates node with type slack and job", () 
   });
 
   const node = result.current.nodes[0]!;
-  const data = node.data as { type: string; job: string; title: string };
+  const data = node.data as { type: string; job: string; title: string; prompt: string };
   assert.equal(data.type, "slack");
   assert.equal(data.job, "send-slack-message");
-  assert.equal(data.title, "Send Slack Message");
+  assert.equal(data.title, "Send PR for Review");
+  assert.ok(data.prompt.length > 0, "should have a default prompt");
+  assert.ok(data.prompt.includes("PR"), "default prompt should mention PR");
 });
 
 test("getDefinition outputs agent claude with metadata for slack nodes", () => {
@@ -257,6 +259,7 @@ test("getDefinition composes prompt from slackChannel and slackMessage", () => {
 
   const def = result.current.getDefinition();
   const step = def.workflow[0]!;
+  assert.ok(step.prompt.includes("PR"));
   assert.ok(step.prompt.includes("Slack MCP"));
   assert.ok(step.prompt.includes("#dev"));
   assert.ok(step.prompt.includes("Hello"));

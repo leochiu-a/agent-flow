@@ -19,7 +19,7 @@ const EDGE_STYLE = { stroke: "var(--color-pink)", strokeWidth: 2 };
 
 const JOB_TITLE: Record<string, string> = {
   "get-jira-ticket": "Get Jira Ticket",
-  "send-slack-message": "Send Slack Message",
+  "send-slack-message": "Send PR for Review",
   "tdd-implementation": "TDD Implementation",
   "claude-agent": "Claude Agent",
 };
@@ -124,9 +124,10 @@ export function useWorkflowGraph({
           title: titleForJob(jobId),
           type: "slack",
           job: "send-slack-message",
-          prompt: "",
+          prompt:
+            "Create a PR for the changes from the previous step and post it to the channel for review.",
           slackChannel: "",
-          slackMessage: "",
+          slackMessage: "Hey team, a PR is ready for review!\n\n- <PR url|PR title>",
           skipPermission: false,
         };
       } else if (isTdd) {
@@ -231,7 +232,7 @@ export function useWorkflowGraph({
         metadata = { job: d.job, jira_ticket: d.jiraTicket };
       } else if (d.type === "slack" && d.slackChannel) {
         const parts = [
-          `Use the Slack MCP tools to send a message to channel "${d.slackChannel}".`,
+          `Create a PR for the changes from the previous step, then use the Slack MCP tools to post it to channel "${d.slackChannel}" for review.`,
           `Message: "${d.slackMessage}"`,
         ];
         prompt = parts.join("\n");
