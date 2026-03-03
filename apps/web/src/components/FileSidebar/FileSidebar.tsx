@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Folder, FolderPlus, Plug, Plus, Trash2 } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 
 import type { LogLine } from "../WorkflowCanvas";
 import { formatDuration } from "../../utils/time";
@@ -414,8 +415,9 @@ export function FileSidebar({
                 (routeFolderId !== null && hashFolderPath(folderPath) === routeFolderId);
               return (
                 <div key={folderPath}>
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       if (onSelectFolder) {
                         onSelectFolder(folderPath);
@@ -429,7 +431,12 @@ export function FileSidebar({
                         toggleFolderExpand(folderPath);
                       }
                     }}
-                    className={`group flex w-full items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.currentTarget.click();
+                      }
+                    }}
+                    className={`group flex w-full cursor-pointer items-center gap-1.5 border-l-2 px-2 py-2 text-left text-xs transition ${
                       isSelected
                         ? "border-pink bg-pink-subtle text-dark"
                         : "border-transparent text-ink hover:bg-surface hover:text-dark"
@@ -442,19 +449,16 @@ export function FileSidebar({
                     />
                     <Folder size={12} className="shrink-0 text-muted-fg" />
                     <span className="min-w-0 flex-1 truncate">{folderName}</span>
-                    <span
-                      role="button"
-                      tabIndex={-1}
+                    <IconButton
+                      icon={<Trash2 size={11} />}
                       onClick={(event) => {
                         event.stopPropagation();
                         removeFolder(folderPath);
                       }}
-                      className="rounded p-0.5 text-muted-fg opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+                      className="shrink-0 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
                       aria-label={`Remove folder ${folderName}`}
-                    >
-                      <Trash2 size={11} />
-                    </span>
-                  </button>
+                    />
+                  </div>
 
                   {isExpanded && (
                     <div className="ml-4">

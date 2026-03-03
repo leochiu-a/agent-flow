@@ -2,9 +2,8 @@
 
 import { Bot, Eye, Pencil, Power, PowerOff, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { IconButton } from "@/components/ui/icon-button";
 
 export interface StepNodeData {
   title: string;
@@ -25,7 +24,6 @@ export function StepNode({ id, data, selected }: NodeProps) {
   const tone = {
     card: "bg-white border-pink/40",
     focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
-    editHover: "hover:text-pink",
   };
 
   const rawPreview = d.prompt.replace(/\n/g, " ").trim();
@@ -56,60 +54,38 @@ export function StepNode({ id, data, selected }: NodeProps) {
         {d.readOnly && (d.onRequestPreview || d.onToggleDisabled) && (
           <div className="ml-auto flex items-center gap-1">
             {d.onRequestPreview && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className="nodrag text-muted-fg hover:text-pink"
-                    onClick={() => d.onRequestPreview!(id)}
-                  >
-                    <Eye size={14} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">View step</TooltipContent>
-              </Tooltip>
+              <IconButton
+                icon={<Eye size={14} />}
+                className="nodrag text-muted-fg"
+                onClick={() => d.onRequestPreview!(id)}
+                tooltip="View step"
+              />
             )}
             {d.onToggleDisabled && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className="nodrag text-muted-fg hover:text-pink"
-                    onClick={() => d.onToggleDisabled!(id)}
-                  >
-                    {d.disabled ? <PowerOff size={14} /> : <Power size={14} />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  {d.disabled ? "Enable step" : "Disable step"}
-                </TooltipContent>
-              </Tooltip>
+              <IconButton
+                icon={d.disabled ? <PowerOff size={14} /> : <Power size={14} />}
+                className="nodrag text-muted-fg"
+                onClick={() => d.onToggleDisabled!(id)}
+                tooltip={d.disabled ? "Enable step" : "Disable step"}
+              />
             )}
           </div>
         )}
 
         {!d.readOnly && (
           <div className="ml-auto flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className={`nodrag ${tone.editHover}`}
+            <IconButton
+              icon={<Pencil />}
+              className="nodrag"
               onClick={() => d.onRequestEdit(id)}
               title="Edit step"
-            >
-              <Pencil />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="nodrag hover:text-pink"
+            />
+            <IconButton
+              icon={<X />}
+              className="nodrag"
               onClick={() => d.onDelete(id)}
               title="Delete step"
-            >
-              <X />
-            </Button>
+            />
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useState, type MouseEvent } from "react";
 import { Trash2 } from "lucide-react";
 import { formatTime, formatDuration } from "../../utils/time";
 import type { SessionSummary } from "./types";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,17 +68,15 @@ export function SessionItem({
       {!readOnly && (
         <AlertDialog open={open} onOpenChange={setOpen}>
           <AlertDialogTrigger asChild>
-            <button
-              type="button"
+            <IconButton
+              icon={<Trash2 size={12} />}
               title="Delete session"
               disabled={isDeleting}
               onClick={(e: MouseEvent) => {
                 e.stopPropagation();
               }}
-              className="shrink-0 cursor-pointer opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-fg transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Trash2 size={12} />
-            </button>
+              className="shrink-0 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+            />
           </AlertDialogTrigger>
           <AlertDialogContent size="sm" onClick={(e: MouseEvent) => e.stopPropagation()}>
             <AlertDialogHeader>

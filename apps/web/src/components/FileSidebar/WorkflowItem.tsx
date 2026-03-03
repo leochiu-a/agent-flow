@@ -1,4 +1,5 @@
 import { MoreHorizontal } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,15 +38,13 @@ export function WorkflowItem({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
+          <IconButton
+            icon={<MoreHorizontal size={12} />}
             aria-label={`Workflow options for ${filename}`}
             disabled={isDeleting}
             onClick={(e) => e.stopPropagation()}
-            className="shrink-0 rounded p-0.5 text-muted-fg opacity-0 transition group-hover:opacity-100 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <MoreHorizontal size={12} />
-          </button>
+            className="shrink-0 opacity-0 group-hover:opacity-100 hover:bg-surface hover:text-dark"
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={onRename}>Rename</DropdownMenuItem>
