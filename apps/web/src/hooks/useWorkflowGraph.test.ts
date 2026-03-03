@@ -80,7 +80,7 @@ test("addNode with get-jira-ticket creates node with type jira and job", () => {
   const data = node.data as { type: string; job: string; title: string };
   assert.equal(data.type, "jira");
   assert.equal(data.job, "get-jira-ticket");
-  assert.equal(data.title, "Jira Step");
+  assert.equal(data.title, "Get Jira Ticket");
 });
 
 test("getDefinition outputs agent claude with metadata for jira nodes", () => {
@@ -206,7 +206,7 @@ test("addNode with send-slack-message creates node with type slack and job", () 
   const data = node.data as { type: string; job: string; title: string };
   assert.equal(data.type, "slack");
   assert.equal(data.job, "send-slack-message");
-  assert.equal(data.title, "Slack Step");
+  assert.equal(data.title, "Send Slack Message");
 });
 
 test("getDefinition outputs agent claude with metadata for slack nodes", () => {

@@ -17,6 +17,23 @@ import { resolveClaudeSessionMode } from "@/hooks/useWorkflowRunner";
 
 const EDGE_STYLE = { stroke: "var(--color-pink)", strokeWidth: 2 };
 
+const JOB_TITLE: Record<string, string> = {
+  "get-jira-ticket": "Get Jira Ticket",
+  "send-slack-message": "Send Slack Message",
+  "tdd-implementation": "TDD Implementation",
+  "claude-agent": "Claude Agent",
+};
+
+const DEFAULT_TITLE = "Claude Agent";
+
+const titleForJob = (jobId?: string) => (jobId && JOB_TITLE[jobId]) || DEFAULT_TITLE;
+const titleForType = (type: string) =>
+  type === "jira"
+    ? JOB_TITLE["get-jira-ticket"]!
+    : type === "slack"
+      ? JOB_TITLE["send-slack-message"]!
+      : DEFAULT_TITLE;
+
 const newId = () => `step-${crypto.randomUUID().slice(0, 8)}`;
 
 export interface WorkflowGraph {
@@ -93,7 +110,7 @@ export function useWorkflowGraph({
       let nodeData: Record<string, unknown>;
       if (isJira) {
         nodeData = {
-          title: "Jira Step",
+          title: titleForJob(jobId),
           type: "jira",
           job: "get-jira-ticket",
           prompt: "",
@@ -102,7 +119,7 @@ export function useWorkflowGraph({
         };
       } else if (isSlack) {
         nodeData = {
-          title: "Slack Step",
+          title: titleForJob(jobId),
           type: "slack",
           job: "send-slack-message",
           prompt: "",
@@ -111,7 +128,7 @@ export function useWorkflowGraph({
           skipPermission: false,
         };
       } else {
-        nodeData = { title: "Claude Step", type: "claude", prompt: "", skipPermission: false };
+        nodeData = { title: titleForJob(jobId), type: "claude", prompt: "", skipPermission: false };
       }
 
       const newNode: Node = {
@@ -210,9 +227,7 @@ export function useWorkflowGraph({
       }
 
       return {
-        name:
-          d.title ||
-          (d.type === "jira" ? "Jira Step" : d.type === "slack" ? "Slack Step" : "Claude Step"),
+        name: d.title || titleForType(d.type ?? "claude"),
         agent: "claude" as const,
         prompt,
         skip_permission: d.skipPermission ?? false,
