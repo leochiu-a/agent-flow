@@ -37,7 +37,16 @@ export interface WorkflowGraph {
   updateNode: (
     id: string,
     data: Partial<
-      Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill" | "jiraTicket">
+      Pick<
+        StepNodeData,
+        | "title"
+        | "prompt"
+        | "skipPermission"
+        | "skill"
+        | "jiraTicket"
+        | "slackChannel"
+        | "slackMessage"
+      >
     >,
   ) => void;
   toggleNodeDisabled: (id: string) => void;
@@ -79,20 +88,37 @@ export function useWorkflowGraph({
       const y = lastNode ? lastNode.position.y : 120;
 
       const isJira = jobId === "get-jira-ticket";
+      const isSlack = jobId === "send-slack-message";
+
+      let nodeData: Record<string, unknown>;
+      if (isJira) {
+        nodeData = {
+          title: "Jira Step",
+          type: "jira",
+          job: "get-jira-ticket",
+          prompt: "",
+          jiraTicket: "",
+          skipPermission: false,
+        };
+      } else if (isSlack) {
+        nodeData = {
+          title: "Slack Step",
+          type: "slack",
+          job: "send-slack-message",
+          prompt: "",
+          slackChannel: "",
+          slackMessage: "",
+          skipPermission: false,
+        };
+      } else {
+        nodeData = { title: "Claude Step", type: "claude", prompt: "", skipPermission: false };
+      }
+
       const newNode: Node = {
         id,
         type: "step",
         position: { x, y },
-        data: isJira
-          ? {
-              title: "Jira Step",
-              type: "jira",
-              job: "get-jira-ticket",
-              prompt: "",
-              jiraTicket: "",
-              skipPermission: false,
-            }
-          : { title: "Claude Step", type: "claude", prompt: "", skipPermission: false },
+        data: nodeData,
       };
 
       setNodes((nds) => [...nds, newNode]);
@@ -122,7 +148,16 @@ export function useWorkflowGraph({
     (
       id: string,
       data: Partial<
-        Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill" | "jiraTicket">
+        Pick<
+          StepNodeData,
+          | "title"
+          | "prompt"
+          | "skipPermission"
+          | "skill"
+          | "jiraTicket"
+          | "slackChannel"
+          | "slackMessage"
+        >
       >,
     ) => {
       const updater = (nds: Node[]) =>
@@ -165,10 +200,19 @@ export function useWorkflowGraph({
         }
         prompt = parts.join("\n");
         metadata = { job: d.job, jira_ticket: d.jiraTicket };
+      } else if (d.type === "slack" && d.slackChannel) {
+        const parts = [
+          `Use the Slack MCP tools to send a message to channel "${d.slackChannel}".`,
+          `Message: "${d.slackMessage}"`,
+        ];
+        prompt = parts.join("\n");
+        metadata = { job: d.job, slack_channel: d.slackChannel, slack_message: d.slackMessage };
       }
 
       return {
-        name: d.title || (d.type === "jira" ? "Jira Step" : "Claude Step"),
+        name:
+          d.title ||
+          (d.type === "jira" ? "Jira Step" : d.type === "slack" ? "Slack Step" : "Claude Step"),
         agent: "claude" as const,
         prompt,
         skip_permission: d.skipPermission ?? false,
@@ -198,6 +242,7 @@ export function useWorkflowGraph({
       const newNodes: Node[] = definition.workflow.map((step, i) => {
         const job = step.metadata?.job as string | undefined;
         const isJira = job === "get-jira-ticket";
+        const isSlack = job === "send-slack-message";
 
         return {
           id: newId(),
@@ -205,11 +250,18 @@ export function useWorkflowGraph({
           position: { x: 60 + i * 340, y: 120 },
           data: {
             title: step.name,
-            type: isJira ? "jira" : "claude",
+            type: isJira ? "jira" : isSlack ? "slack" : "claude",
             prompt: step.prompt ?? "",
             skipPermission: step.skip_permission ?? false,
             ...(step.skill ? { skill: step.skill } : {}),
             ...(isJira ? { job, jiraTicket: step.metadata?.jira_ticket as string } : {}),
+            ...(isSlack
+              ? {
+                  job,
+                  slackChannel: step.metadata?.slack_channel as string,
+                  slackMessage: step.metadata?.slack_message as string,
+                }
+              : {}),
           },
         };
       });

@@ -192,3 +192,132 @@ test("updateNode supports jiraTicket field", () => {
   const data = result.current.nodes[0]!.data as { jiraTicket: string };
   assert.equal(data.jiraTicket, "TEST-789");
 });
+
+// --- Slack node tests ---
+
+test("addNode with send-slack-message creates node with type slack and job", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  act(() => {
+    result.current.addNode("send-slack-message");
+  });
+
+  const node = result.current.nodes[0]!;
+  const data = node.data as { type: string; job: string; title: string };
+  assert.equal(data.type, "slack");
+  assert.equal(data.job, "send-slack-message");
+  assert.equal(data.title, "Slack Step");
+});
+
+test("getDefinition outputs agent claude with metadata for slack nodes", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  act(() => {
+    result.current.addNode("send-slack-message");
+  });
+
+  const nodeId = result.current.nodes[0]!.id;
+
+  act(() => {
+    result.current.updateNode(nodeId, {
+      title: "Notify team",
+      slackChannel: "#general",
+      slackMessage: "Deploy done",
+    });
+  });
+
+  const def = result.current.getDefinition();
+  const step = def.workflow[0]!;
+  assert.equal(step.agent, "claude");
+  assert.deepEqual(step.metadata, {
+    job: "send-slack-message",
+    slack_channel: "#general",
+    slack_message: "Deploy done",
+  });
+  assert.ok(step.prompt.includes("#general"));
+  assert.ok(step.prompt.includes("Deploy done"));
+});
+
+test("getDefinition composes prompt from slackChannel and slackMessage", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  act(() => {
+    result.current.addNode("send-slack-message");
+  });
+
+  const nodeId = result.current.nodes[0]!.id;
+
+  act(() => {
+    result.current.updateNode(nodeId, {
+      title: "Notify",
+      slackChannel: "#dev",
+      slackMessage: "Hello",
+    });
+  });
+
+  const def = result.current.getDefinition();
+  const step = def.workflow[0]!;
+  assert.ok(step.prompt.includes("Slack MCP"));
+  assert.ok(step.prompt.includes("#dev"));
+  assert.ok(step.prompt.includes("Hello"));
+});
+
+test("loadDefinition restores slack node from metadata.job", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  const definition: WorkflowDefinition = {
+    name: "test",
+    workflow: [
+      {
+        name: "Notify team",
+        agent: "claude",
+        prompt: "composed prompt here",
+        metadata: {
+          job: "send-slack-message",
+          slack_channel: "#general",
+          slack_message: "Hello world",
+        },
+      },
+    ],
+  };
+
+  act(() => {
+    result.current.loadDefinition(definition);
+  });
+
+  const node = result.current.nodes[0]!;
+  const data = node.data as {
+    type: string;
+    job: string;
+    slackChannel: string;
+    slackMessage: string;
+  };
+  assert.equal(data.type, "slack");
+  assert.equal(data.job, "send-slack-message");
+  assert.equal(data.slackChannel, "#general");
+  assert.equal(data.slackMessage, "Hello world");
+});
+
+test("updateNode supports slackChannel and slackMessage fields", () => {
+  const { result } = renderHook(() => useWorkflowGraph({ activeFile: "test.yaml" }));
+
+  act(() => {
+    result.current.addNode("send-slack-message");
+  });
+
+  const nodeId = result.current.nodes[0]!.id;
+
+  act(() => {
+    result.current.updateNode(nodeId, {
+      slackChannel: "#ops",
+      slackMessage: "Alert!",
+    });
+  });
+
+  const data = result.current.nodes[0]!.data as {
+    slackChannel: string;
+    slackMessage: string;
+  };
+  assert.equal(data.slackChannel, "#ops");
+  assert.equal(data.slackMessage, "Alert!");
+});

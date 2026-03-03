@@ -1,18 +1,20 @@
 "use client";
 
-import { Bot, Eye, Pencil, Power, PowerOff, Ticket, X } from "lucide-react";
+import { Bot, Eye, MessageSquare, Pencil, Power, PowerOff, Ticket, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
 import { IconButton } from "@/components/ui/icon-button";
 
 export interface StepNodeData {
   title: string;
-  type: "claude" | "jira";
+  type: "claude" | "jira" | "slack";
   prompt: string;
   skipPermission?: boolean;
   skill?: string;
   job?: string;
   jiraTicket?: string;
+  slackChannel?: string;
+  slackMessage?: string;
   disabled?: boolean;
   readOnly?: boolean;
   onRequestEdit: (id: string) => void;
@@ -22,18 +24,24 @@ export interface StepNodeData {
   [key: string]: unknown;
 }
 
+const TONE_MAP = {
+  jira: {
+    card: "bg-white border-jira/40",
+    focus: "border-jira shadow-[0_0_0_1px_rgba(38,132,255,0.6),0_0_24px_rgba(38,132,255,0.15)]",
+  },
+  slack: {
+    card: "bg-white border-slack/40",
+    focus: "border-slack shadow-[0_0_0_1px_rgba(74,21,75,0.6),0_0_24px_rgba(74,21,75,0.15)]",
+  },
+  claude: {
+    card: "bg-white border-pink/40",
+    focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
+  },
+} as const;
+
 export function StepNode({ id, data, selected }: NodeProps) {
   const d = data as StepNodeData;
-  const isJira = d.type === "jira";
-  const tone = isJira
-    ? {
-        card: "bg-white border-jira/40",
-        focus: "border-jira shadow-[0_0_0_1px_rgba(38,132,255,0.6),0_0_24px_rgba(38,132,255,0.15)]",
-      }
-    : {
-        card: "bg-white border-pink/40",
-        focus: "border-pink shadow-[0_0_0_1px_rgba(234,75,113,0.6),0_0_24px_rgba(234,75,113,0.15)]",
-      };
+  const tone = TONE_MAP[d.type] ?? TONE_MAP.claude;
 
   const rawPreview = d.prompt.replace(/\n/g, " ").trim();
   const preview = rawPreview.length > 80 ? `${rawPreview.slice(0, 80)}…` : rawPreview;
@@ -55,10 +63,15 @@ export function StepNode({ id, data, selected }: NodeProps) {
 
       {/* Header: type badge + action buttons */}
       <div className="mb-2.5 flex items-center gap-2">
-        {isJira ? (
+        {d.type === "jira" ? (
           <Badge variant="jira">
             <Ticket />
             Jira
+          </Badge>
+        ) : d.type === "slack" ? (
+          <Badge variant="slack">
+            <MessageSquare />
+            Slack
           </Badge>
         ) : (
           <Badge variant="connected">
@@ -112,9 +125,16 @@ export function StepNode({ id, data, selected }: NodeProps) {
       </div>
 
       {/* Ticket info */}
-      {isJira && d.jiraTicket && (
+      {d.type === "jira" && d.jiraTicket && (
         <div className="mb-1 text-[11px] text-muted-fg">
           Ticket: <span className="font-medium">{d.jiraTicket}</span>
+        </div>
+      )}
+
+      {/* Channel info */}
+      {d.type === "slack" && d.slackChannel && (
+        <div className="mb-1 text-[11px] text-muted-fg">
+          Channel: <span className="font-medium">{d.slackChannel}</span>
         </div>
       )}
 

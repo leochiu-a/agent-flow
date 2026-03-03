@@ -67,3 +67,21 @@ test("does not show ticket info when jiraTicket is not set", () => {
   renderStepNode({ type: "jira", job: "get-jira-ticket" });
   expect(screen.queryByText("Ticket:")).toBeNull();
 });
+
+test("shows Slack badge for slack type node", () => {
+  renderStepNode({ type: "slack", job: "send-slack-message" });
+  expect(screen.getByText("Slack")).toBeTruthy();
+  expect(screen.queryByText("Claude")).toBeNull();
+  expect(screen.queryByText("Jira")).toBeNull();
+});
+
+test("shows channel info for slack node with slackChannel", () => {
+  renderStepNode({ type: "slack", job: "send-slack-message", slackChannel: "#general" });
+  expect(screen.getByText("#general")).toBeTruthy();
+  expect(screen.getByText("Channel:")).toBeTruthy();
+});
+
+test("does not show channel info when slackChannel is not set", () => {
+  renderStepNode({ type: "slack", job: "send-slack-message" });
+  expect(screen.queryByText("Channel:")).toBeNull();
+});

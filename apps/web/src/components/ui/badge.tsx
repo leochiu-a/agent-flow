@@ -21,6 +21,8 @@ const badgeVariants = cva(
         connected:
           "bg-pink/10 text-pink border-pink/30 text-[10px] font-semibold uppercase tracking-wide",
         jira: "bg-jira/10 text-jira border-jira/30 text-[10px] font-semibold uppercase tracking-wide",
+        slack:
+          "bg-slack/10 text-slack border-slack/30 text-[10px] font-semibold uppercase tracking-wide",
         disconnected:
           "bg-disabled text-ink border-border text-[10px] font-semibold uppercase tracking-wide",
         connecting:

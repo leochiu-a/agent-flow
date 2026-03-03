@@ -3,21 +3,25 @@
 import { useCallback, useEffect } from "react";
 import { ClaudeStepModal } from "./ClaudeStepModal";
 import { JiraStepModal } from "./JiraStepModal";
+import { SlackStepModal } from "./SlackStepModal";
 import type { StepFormData } from "./ClaudeStepModal";
 import type { JiraStepFormData } from "./JiraStepModal";
+import type { SlackStepFormData } from "./SlackStepModal";
 
 interface StepEditModalProps {
   stepId: string;
-  stepType: "claude" | "jira";
+  stepType: "claude" | "jira" | "slack";
   initialTitle: string;
   initialPrompt: string;
   initialSkipPermission?: boolean;
   initialSkill?: string;
   initialJiraTicket?: string;
+  initialSlackChannel?: string;
+  initialSlackMessage?: string;
   saving: boolean;
   error: string | null;
   readOnly?: boolean;
-  onSave: (id: string, data: StepFormData | JiraStepFormData) => void;
+  onSave: (id: string, data: StepFormData | JiraStepFormData | SlackStepFormData) => void;
   onClose: () => void;
 }
 
@@ -29,6 +33,8 @@ export function StepEditModal({
   initialSkipPermission,
   initialSkill,
   initialJiraTicket,
+  initialSlackChannel,
+  initialSlackMessage,
   saving,
   error,
   readOnly,
@@ -44,7 +50,7 @@ export function StepEditModal({
   }, [onClose]);
 
   const handleSave = useCallback(
-    (data: StepFormData | JiraStepFormData) => {
+    (data: StepFormData | JiraStepFormData | SlackStepFormData) => {
       onSave(stepId, data);
     },
     [stepId, onSave],
@@ -63,6 +69,18 @@ export function StepEditModal({
             initialTitle={initialTitle}
             initialJiraTicket={initialJiraTicket ?? ""}
             initialPrompt={initialPrompt}
+            initialSkipPermission={initialSkipPermission}
+            saving={saving}
+            error={error}
+            readOnly={readOnly}
+            onSave={handleSave}
+            onCancel={onClose}
+          />
+        ) : stepType === "slack" ? (
+          <SlackStepModal
+            initialTitle={initialTitle}
+            initialSlackChannel={initialSlackChannel ?? ""}
+            initialSlackMessage={initialSlackMessage ?? ""}
             initialSkipPermission={initialSkipPermission}
             saving={saving}
             error={error}

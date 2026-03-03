@@ -9,6 +9,7 @@ import { StepNode } from "./StepNode";
 import { StepEditModal } from "./StepModals/StepEditModal";
 import type { StepFormData } from "./StepModals/ClaudeStepModal";
 import type { JiraStepFormData } from "./StepModals/JiraStepModal";
+import type { SlackStepFormData } from "./StepModals/SlackStepModal";
 import type { StepNodeData } from "./StepNode";
 import type { WorkflowGraph } from "@/hooks/useWorkflowGraph";
 
@@ -67,7 +68,7 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
   );
 
   const handleModalSave = useCallback(
-    (id: string, data: StepFormData | JiraStepFormData) => {
+    (id: string, data: StepFormData | JiraStepFormData | SlackStepFormData) => {
       setIsModalSaving(true);
       setModalError(null);
 
@@ -133,25 +134,32 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
         />
       </ReactFlow>
 
-      {modalNode && modalState && (
-        <StepEditModal
-          stepId={modalState.stepId}
-          stepType={(modalNode.data as StepNodeData).type}
-          initialTitle={(modalNode.data as StepNodeData).title}
-          initialPrompt={(modalNode.data as StepNodeData).prompt}
-          initialSkipPermission={(modalNode.data as StepNodeData).skipPermission}
-          initialSkill={(modalNode.data as StepNodeData).skill}
-          initialJiraTicket={(modalNode.data as StepNodeData).jiraTicket}
-          saving={modalState.mode === "edit" ? isModalSaving : false}
-          error={modalState.mode === "edit" ? modalError : null}
-          readOnly={modalState.mode === "preview"}
-          onSave={modalState.mode === "edit" ? handleModalSave : () => {}}
-          onClose={() => {
-            setModalState(null);
-            setModalError(null);
-          }}
-        />
-      )}
+      {modalNode &&
+        modalState &&
+        (() => {
+          const md = modalNode.data as StepNodeData;
+          return (
+            <StepEditModal
+              stepId={modalState.stepId}
+              stepType={md.type}
+              initialTitle={md.title}
+              initialPrompt={md.prompt}
+              initialSkipPermission={md.skipPermission}
+              initialSkill={md.skill}
+              initialJiraTicket={md.jiraTicket}
+              initialSlackChannel={md.slackChannel}
+              initialSlackMessage={md.slackMessage}
+              saving={modalState.mode === "edit" ? isModalSaving : false}
+              error={modalState.mode === "edit" ? modalError : null}
+              readOnly={modalState.mode === "preview"}
+              onSave={modalState.mode === "edit" ? handleModalSave : () => {}}
+              onClose={() => {
+                setModalState(null);
+                setModalError(null);
+              }}
+            />
+          );
+        })()}
     </div>
   );
 }
