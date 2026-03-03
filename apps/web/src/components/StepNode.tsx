@@ -1,9 +1,12 @@
 "use client";
 
-import { Bot, Eye, MessageSquare, Pencil, Power, PowerOff, Ticket, X } from "lucide-react";
+import { Eye, Pencil, Power, PowerOff, X } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
 import { IconButton } from "@/components/ui/icon-button";
+import SlackIcon from "@/assets/slack.svg";
+import ClaudeIcon from "@/assets/claude.svg";
+import AtlassianIcon from "@/assets/atlassian.svg";
 
 export interface StepNodeData {
   title: string;
@@ -65,17 +68,17 @@ export function StepNode({ id, data, selected }: NodeProps) {
       <div className="mb-2.5 flex items-center gap-2">
         {d.type === "jira" ? (
           <Badge variant="jira">
-            <Ticket />
+            <AtlassianIcon className="size-3" />
             Jira
           </Badge>
         ) : d.type === "slack" ? (
           <Badge variant="slack">
-            <MessageSquare />
+            <SlackIcon className="size-3" />
             Slack
           </Badge>
         ) : (
           <Badge variant="connected">
-            <Bot />
+            <ClaudeIcon className="size-3" />
             Claude
           </Badge>
         )}

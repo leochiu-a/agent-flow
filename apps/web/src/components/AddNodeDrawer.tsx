@@ -1,8 +1,11 @@
 "use client";
 
-import { type LucideIcon } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Bot, MessageSquare, Plus, Search, TestTube, Ticket } from "lucide-react";
+import { useMemo, useState, type FC, type SVGProps } from "react";
+
+import { Plus, Search } from "lucide-react";
+import SlackIcon from "@/assets/slack.svg";
+import ClaudeIcon from "@/assets/claude.svg";
+import AtlassianIcon from "@/assets/atlassian.svg";
 import {
   Drawer,
   DrawerContent,
@@ -16,28 +19,28 @@ interface NodeItem {
   id: string;
   label: string;
   description: string;
-  icon: LucideIcon;
+  icon: FC<SVGProps<SVGSVGElement>>;
 }
 
 const NODE_LIST: NodeItem[] = [
-  { id: "claude-agent", label: "Claude Agent", description: "Blank node", icon: Bot },
+  { id: "claude-agent", label: "Claude Agent", description: "Blank node", icon: ClaudeIcon },
   {
     id: "get-jira-ticket",
     label: "Get Jira Ticket",
     description: "Fetch and assign Jira issues",
-    icon: Ticket,
+    icon: AtlassianIcon,
   },
   {
     id: "tdd-implementation",
     label: "TDD Implementation",
     description: "Test-driven development workflow",
-    icon: TestTube,
+    icon: ClaudeIcon,
   },
   {
     id: "send-slack-message",
     label: "Send Slack Message",
     description: "Post messages to Slack channels",
-    icon: MessageSquare,
+    icon: SlackIcon,
   },
 ];
 
@@ -109,7 +112,7 @@ export function AddNodeDrawer({ onAddNode, disabled }: AddNodeDrawerProps) {
                 className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition hover:border-pink/40 hover:bg-pink-subtle"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-pink/10 text-pink">
-                  <item.icon size={16} />
+                  <item.icon className="size-4" />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-dark">{item.label}</div>
