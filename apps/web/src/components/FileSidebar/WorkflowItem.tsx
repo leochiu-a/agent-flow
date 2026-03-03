@@ -32,7 +32,12 @@ export function WorkflowItem({
           : "border-transparent text-ink hover:bg-surface hover:text-dark"
       }`}
     >
-      <button type="button" onClick={onWorkflowClick} className="min-w-0 flex-1" title={filename}>
+      <button
+        type="button"
+        onClick={onWorkflowClick}
+        className="min-w-0 flex-1 cursor-pointer"
+        title={filename}
+      >
         <span className="block truncate text-left">{filename}</span>
       </button>
 
