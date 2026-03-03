@@ -17,7 +17,6 @@ import { WorkflowItem } from "./WorkflowItem";
 import { SessionItem } from "./SessionItem";
 import type { SessionDetail, SessionSummaryWithWorkflow } from "./types";
 import type { LastRunResult } from "@/hooks/useWorkflowRunner";
-import { Button } from "@/components/ui/button";
 import { hashFolderPath } from "@/utils/folderHash";
 
 interface FileSidebarProps {
@@ -389,16 +388,14 @@ export function FileSidebar({
         <div className="mt-2 pt-2">
           <div className="flex items-center gap-1.5 px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-fg">
             Folder
-            <Button
-              variant="icon-border"
-              size="icon-xs"
+            <IconButton
+              icon={<FolderPlus size={12} />}
+              variant="border"
               onClick={() => setShowFolderBrowser(true)}
               className="ml-auto text-sm leading-none"
               aria-label="Browse folders"
               title="Browse folders"
-            >
-              <FolderPlus size={12} />
-            </Button>
+            />
           </div>
 
           {folders.length === 0 ? (

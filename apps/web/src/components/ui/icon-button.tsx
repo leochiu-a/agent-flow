@@ -9,21 +9,31 @@ const sizeMap = {
   default: "icon",
 } as const;
 
+const variantMap = {
+  ghost: { variant: "ghost", className: "hover:text-pink" },
+  border: { variant: "icon-border", className: "" },
+} as const;
+
 interface IconButtonProps extends Omit<React.ComponentProps<"button">, "children"> {
   icon: React.ReactElement;
   size?: "xs" | "sm" | "default";
+  variant?: "ghost" | "border";
   tooltip?: string;
   tooltipSide?: "top" | "bottom" | "left" | "right";
 }
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ icon, size = "xs", tooltip, tooltipSide = "top", className, ...props }, ref) => {
+  (
+    { icon, size = "xs", variant = "ghost", tooltip, tooltipSide = "top", className, ...props },
+    ref,
+  ) => {
+    const v = variantMap[variant];
     const button = (
       <Button
         ref={ref}
-        variant="ghost"
+        variant={v.variant}
         size={sizeMap[size]}
-        className={cn("hover:text-pink", className)}
+        className={cn(v.className, className)}
         {...props}
       >
         {icon}

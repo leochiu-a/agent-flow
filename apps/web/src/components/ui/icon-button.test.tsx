@@ -65,6 +65,11 @@ test("uses ghost variant", () => {
   expect(screen.getByRole("button").dataset.variant).toBe("ghost");
 });
 
+test("variant=border uses icon-border variant", () => {
+  render(<IconButton icon={<svg />} variant="border" />);
+  expect(screen.getByRole("button").dataset.variant).toBe("icon-border");
+});
+
 test("renders with tooltip prop without crashing", () => {
   render(
     <TooltipProvider>
