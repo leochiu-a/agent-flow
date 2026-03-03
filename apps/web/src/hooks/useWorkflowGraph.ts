@@ -133,7 +133,8 @@ export function useWorkflowGraph({
           title: titleForJob(jobId),
           type: "claude",
           job: "tdd-implementation",
-          prompt: "",
+          prompt:
+            "Use strict TDD (Red-Green-Refactor) to implement the feature described in the previous step's output.\n\nContext from previous step:\n{{previous_step_output}}",
           skill: "test-driven-development",
           skipPermission: false,
         };
