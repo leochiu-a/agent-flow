@@ -91,7 +91,7 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
           <Clock size={64} strokeWidth={1} />
           <div className="text-sm tracking-wide">
             {activeFile
-              ? "Add a step above to start building your workflow"
+              ? "Click the + button to start building your workflow"
               : "Load a workflow to display it on canvas"}
           </div>
         </div>

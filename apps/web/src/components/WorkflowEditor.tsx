@@ -12,6 +12,7 @@ import { useTerminalPanel } from "@/hooks/useTerminalPanel";
 import { useNavigation } from "@/hooks/useNavigation";
 import { useWorkflowRunner } from "@/hooks/useWorkflowRunner";
 import { useWorkflowGraph } from "@/hooks/useWorkflowGraph";
+import { AddNodeDrawer } from "@/components/AddNodeDrawer";
 import { Button } from "@/components/ui/button";
 
 interface WorkflowEditorProps {
@@ -97,9 +98,6 @@ export function WorkflowEditor({ initialFile }: WorkflowEditorProps) {
       canvas={
         <div className="relative h-full w-full">
           <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-md shadow-black/8 backdrop-blur">
-            <Button variant="pink" size="sm" onClick={graph.addNode} disabled={runner.running}>
-              + Claude Agent
-            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -134,6 +132,9 @@ export function WorkflowEditor({ initialFile }: WorkflowEditorProps) {
                 )}
               </span>
             )}
+          </div>
+          <div className="absolute right-4 top-4 z-10">
+            <AddNodeDrawer onAddNode={graph.addNode} disabled={runner.running} />
           </div>
           <WorkflowCanvas
             graph={graph}
