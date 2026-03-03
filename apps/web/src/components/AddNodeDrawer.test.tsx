@@ -5,7 +5,7 @@ import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { AddNodeDrawer } from "./AddNodeDrawer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-function renderDrawer(props: { onAddNode: () => void; disabled?: boolean }) {
+function renderDrawer(props: { onAddNode: (jobId: string) => void; disabled?: boolean }) {
   return render(
     <TooltipProvider>
       <AddNodeDrawer {...props} />
@@ -62,22 +62,22 @@ test("shows all job items in flat list", async () => {
   expect(screen.getByText("Send Slack Message")).toBeTruthy();
 });
 
-test("calls onAddNode when Claude Agent is clicked", async () => {
+test("calls onAddNode with 'claude-agent' when Claude Agent is clicked", async () => {
   const onAddNode = vi.fn();
   const user = userEvent.setup({ pointerEventsCheck: 0 });
   renderDrawer({ onAddNode });
   await user.click(screen.getByTitle("Add node"));
   await user.click(screen.getByText("Claude Agent"));
-  expect(onAddNode).toHaveBeenCalledOnce();
+  expect(onAddNode).toHaveBeenCalledWith("claude-agent");
 });
 
-test("calls onAddNode when Get Jira Ticket is clicked", async () => {
+test("calls onAddNode with 'get-jira-ticket' when Get Jira Ticket is clicked", async () => {
   const onAddNode = vi.fn();
   const user = userEvent.setup({ pointerEventsCheck: 0 });
   renderDrawer({ onAddNode });
   await user.click(screen.getByTitle("Add node"));
   await user.click(screen.getByText("Get Jira Ticket"));
-  expect(onAddNode).toHaveBeenCalledOnce();
+  expect(onAddNode).toHaveBeenCalledWith("get-jira-ticket");
 });
 
 test("filters nodes by search text", async () => {

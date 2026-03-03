@@ -44,3 +44,26 @@ test("does not show skill badge when skill is not set", () => {
   renderStepNode();
   expect(screen.queryByText("Skill:")).toBeNull();
 });
+
+test("shows Jira badge for jira type node", () => {
+  renderStepNode({ type: "jira", job: "get-jira-ticket" });
+  expect(screen.getByText("Jira")).toBeTruthy();
+  expect(screen.queryByText("Claude")).toBeNull();
+});
+
+test("shows Claude badge for claude type node", () => {
+  renderStepNode({ type: "claude" });
+  expect(screen.getByText("Claude")).toBeTruthy();
+  expect(screen.queryByText("Jira")).toBeNull();
+});
+
+test("shows ticket info for jira node with jiraTicket", () => {
+  renderStepNode({ type: "jira", job: "get-jira-ticket", jiraTicket: "PROJ-123" });
+  expect(screen.getByText("PROJ-123")).toBeTruthy();
+  expect(screen.getByText("Ticket:")).toBeTruthy();
+});
+
+test("does not show ticket info when jiraTicket is not set", () => {
+  renderStepNode({ type: "jira", job: "get-jira-ticket" });
+  expect(screen.queryByText("Ticket:")).toBeNull();
+});

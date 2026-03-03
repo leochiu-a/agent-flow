@@ -20,6 +20,7 @@ const badgeVariants = cva(
         // Project-specific variants
         connected:
           "bg-pink/10 text-pink border-pink/30 text-[10px] font-semibold uppercase tracking-wide",
+        jira: "bg-jira/10 text-jira border-jira/30 text-[10px] font-semibold uppercase tracking-wide",
         disconnected:
           "bg-disabled text-ink border-border text-[10px] font-semibold uppercase tracking-wide",
         connecting:

@@ -8,6 +8,7 @@ import { dump as yamlDump } from "js-yaml";
 import { StepNode } from "./StepNode";
 import { StepEditModal } from "./StepModals/StepEditModal";
 import type { StepFormData } from "./StepModals/ClaudeStepModal";
+import type { JiraStepFormData } from "./StepModals/JiraStepModal";
 import type { StepNodeData } from "./StepNode";
 import type { WorkflowGraph } from "@/hooks/useWorkflowGraph";
 
@@ -66,7 +67,7 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
   );
 
   const handleModalSave = useCallback(
-    (id: string, data: StepFormData) => {
+    (id: string, data: StepFormData | JiraStepFormData) => {
       setIsModalSaving(true);
       setModalError(null);
 
@@ -135,10 +136,12 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
       {modalNode && modalState && (
         <StepEditModal
           stepId={modalState.stepId}
+          stepType={(modalNode.data as StepNodeData).type}
           initialTitle={(modalNode.data as StepNodeData).title}
           initialPrompt={(modalNode.data as StepNodeData).prompt}
           initialSkipPermission={(modalNode.data as StepNodeData).skipPermission}
           initialSkill={(modalNode.data as StepNodeData).skill}
+          initialJiraTicket={(modalNode.data as StepNodeData).jiraTicket}
           saving={modalState.mode === "edit" ? isModalSaving : false}
           error={modalState.mode === "edit" ? modalError : null}
           readOnly={modalState.mode === "preview"}

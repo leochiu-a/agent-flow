@@ -2,27 +2,33 @@
 
 import { useCallback, useEffect } from "react";
 import { ClaudeStepModal } from "./ClaudeStepModal";
+import { JiraStepModal } from "./JiraStepModal";
 import type { StepFormData } from "./ClaudeStepModal";
+import type { JiraStepFormData } from "./JiraStepModal";
 
 interface StepEditModalProps {
   stepId: string;
+  stepType: "claude" | "jira";
   initialTitle: string;
   initialPrompt: string;
   initialSkipPermission?: boolean;
   initialSkill?: string;
+  initialJiraTicket?: string;
   saving: boolean;
   error: string | null;
   readOnly?: boolean;
-  onSave: (id: string, data: StepFormData) => void;
+  onSave: (id: string, data: StepFormData | JiraStepFormData) => void;
   onClose: () => void;
 }
 
 export function StepEditModal({
   stepId,
+  stepType,
   initialTitle,
   initialPrompt,
   initialSkipPermission,
   initialSkill,
+  initialJiraTicket,
   saving,
   error,
   readOnly,
@@ -38,7 +44,7 @@ export function StepEditModal({
   }, [onClose]);
 
   const handleSave = useCallback(
-    (data: StepFormData) => {
+    (data: StepFormData | JiraStepFormData) => {
       onSave(stepId, data);
     },
     [stepId, onSave],
@@ -52,17 +58,31 @@ export function StepEditModal({
       }}
     >
       <div className="flex w-full max-w-2xl flex-col gap-4 rounded-xl border border-border bg-white p-6 shadow-2xl shadow-black/10">
-        <ClaudeStepModal
-          initialTitle={initialTitle}
-          initialPrompt={initialPrompt}
-          initialSkipPermission={initialSkipPermission}
-          initialSkill={initialSkill}
-          saving={saving}
-          error={error}
-          readOnly={readOnly}
-          onSave={handleSave}
-          onCancel={onClose}
-        />
+        {stepType === "jira" ? (
+          <JiraStepModal
+            initialTitle={initialTitle}
+            initialJiraTicket={initialJiraTicket ?? ""}
+            initialPrompt={initialPrompt}
+            initialSkipPermission={initialSkipPermission}
+            saving={saving}
+            error={error}
+            readOnly={readOnly}
+            onSave={handleSave}
+            onCancel={onClose}
+          />
+        ) : (
+          <ClaudeStepModal
+            initialTitle={initialTitle}
+            initialPrompt={initialPrompt}
+            initialSkipPermission={initialSkipPermission}
+            initialSkill={initialSkill}
+            saving={saving}
+            error={error}
+            readOnly={readOnly}
+            onSave={handleSave}
+            onCancel={onClose}
+          />
+        )}
       </div>
     </div>
   );

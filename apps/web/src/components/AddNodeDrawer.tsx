@@ -42,7 +42,7 @@ const NODE_LIST: NodeItem[] = [
 ];
 
 interface AddNodeDrawerProps {
-  onAddNode: () => void;
+  onAddNode: (jobId: string) => void;
   disabled?: boolean;
 }
 
@@ -58,8 +58,8 @@ export function AddNodeDrawer({ onAddNode, disabled }: AddNodeDrawerProps) {
     );
   }, [search]);
 
-  const handleSelectNode = () => {
-    onAddNode();
+  const handleSelectNode = (item: NodeItem) => {
+    onAddNode(item.id);
     setOpen(false);
     setSearch("");
   };
@@ -105,7 +105,7 @@ export function AddNodeDrawer({ onAddNode, disabled }: AddNodeDrawerProps) {
               <button
                 key={item.id}
                 type="button"
-                onClick={handleSelectNode}
+                onClick={() => handleSelectNode(item)}
                 className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition hover:border-pink/40 hover:bg-pink-subtle"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-pink/10 text-pink">

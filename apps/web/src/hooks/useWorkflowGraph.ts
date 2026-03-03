@@ -28,7 +28,7 @@ export interface WorkflowGraph {
   onConnect: (connection: Connection) => void;
 
   // Toolbar actions
-  addNode: () => void;
+  addNode: (jobId?: string) => void;
   getDefinition: () => WorkflowDefinition;
   nodeCount: number;
 
@@ -36,7 +36,9 @@ export interface WorkflowGraph {
   deleteNode: (id: string) => void;
   updateNode: (
     id: string,
-    data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill">>,
+    data: Partial<
+      Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill" | "jiraTicket">
+    >,
   ) => void;
   toggleNodeDisabled: (id: string) => void;
 
@@ -69,39 +71,47 @@ export function useWorkflowGraph({
     [setEdges],
   );
 
-  const addNode = useCallback(() => {
-    const id = newId();
-    const lastNode = nodesRef.current[nodesRef.current.length - 1];
-    const x = lastNode ? lastNode.position.x + 340 : 60;
-    const y = lastNode ? lastNode.position.y : 120;
+  const addNode = useCallback(
+    (jobId?: string) => {
+      const id = newId();
+      const lastNode = nodesRef.current[nodesRef.current.length - 1];
+      const x = lastNode ? lastNode.position.x + 340 : 60;
+      const y = lastNode ? lastNode.position.y : 120;
 
-    const newNode: Node = {
-      id,
-      type: "step",
-      position: { x, y },
-      data: {
-        title: "Claude Step",
-        type: "claude",
-        prompt: "",
-        skipPermission: false,
-      },
-    };
+      const isJira = jobId === "get-jira-ticket";
+      const newNode: Node = {
+        id,
+        type: "step",
+        position: { x, y },
+        data: isJira
+          ? {
+              title: "Jira Step",
+              type: "jira",
+              job: "get-jira-ticket",
+              prompt: "",
+              jiraTicket: "",
+              skipPermission: false,
+            }
+          : { title: "Claude Step", type: "claude", prompt: "", skipPermission: false },
+      };
 
-    setNodes((nds) => [...nds, newNode]);
+      setNodes((nds) => [...nds, newNode]);
 
-    if (lastNode) {
-      setEdgesRef.current((eds) => [
-        ...eds,
-        {
-          id: `e-${lastNode.id}-${id}`,
-          source: lastNode.id,
-          target: id,
-          animated: true,
-          style: EDGE_STYLE,
-        },
-      ]);
-    }
-  }, [setNodes]);
+      if (lastNode) {
+        setEdgesRef.current((eds) => [
+          ...eds,
+          {
+            id: `e-${lastNode.id}-${id}`,
+            source: lastNode.id,
+            target: id,
+            animated: true,
+            style: EDGE_STYLE,
+          },
+        ]);
+      }
+    },
+    [setNodes],
+  );
 
   const deleteNode = useCallback((id: string) => {
     setNodesRef.current((nds) => nds.filter((node) => node.id !== id));
@@ -111,7 +121,9 @@ export function useWorkflowGraph({
   const updateNode = useCallback(
     (
       id: string,
-      data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill">>,
+      data: Partial<
+        Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill" | "jiraTicket">
+      >,
     ) => {
       const updater = (nds: Node[]) =>
         nds.map((node) => (node.id === id ? { ...node, data: { ...node.data, ...data } } : node));
@@ -139,12 +151,29 @@ export function useWorkflowGraph({
       .sort((a, b) => a.position.x - b.position.x);
     const workflow: WorkflowDefinition["workflow"] = sorted.map((node) => {
       const d = node.data as StepNodeData;
+
+      let prompt = d.prompt || "";
+      let metadata: Record<string, unknown> | undefined;
+
+      if (d.type === "jira" && d.jiraTicket) {
+        const parts = [
+          `Use the Jira MCP tools to fetch and analyze ticket "${d.jiraTicket}".`,
+          `Read the ticket details including summary, description, status, assignee, and comments.`,
+        ];
+        if (d.prompt?.trim()) {
+          parts.push(`\n${d.prompt}`);
+        }
+        prompt = parts.join("\n");
+        metadata = { job: d.job, jira_ticket: d.jiraTicket };
+      }
+
       return {
-        name: d.title || "Claude Step",
-        agent: "claude",
-        prompt: d.prompt || "",
+        name: d.title || (d.type === "jira" ? "Jira Step" : "Claude Step"),
+        agent: "claude" as const,
+        prompt,
         skip_permission: d.skipPermission ?? false,
         ...(d.skill ? { skill: d.skill } : {}),
+        ...(metadata ? { metadata } : {}),
       };
     });
 
@@ -166,18 +195,24 @@ export function useWorkflowGraph({
         return;
       }
 
-      const newNodes: Node[] = definition.workflow.map((step, i) => ({
-        id: newId(),
-        type: "step",
-        position: { x: 60 + i * 340, y: 120 },
-        data: {
-          title: step.name,
-          type: "claude",
-          prompt: step.prompt ?? "",
-          skipPermission: step.skip_permission ?? false,
-          ...(step.skill ? { skill: step.skill } : {}),
-        },
-      }));
+      const newNodes: Node[] = definition.workflow.map((step, i) => {
+        const job = step.metadata?.job as string | undefined;
+        const isJira = job === "get-jira-ticket";
+
+        return {
+          id: newId(),
+          type: "step",
+          position: { x: 60 + i * 340, y: 120 },
+          data: {
+            title: step.name,
+            type: isJira ? "jira" : "claude",
+            prompt: step.prompt ?? "",
+            skipPermission: step.skip_permission ?? false,
+            ...(step.skill ? { skill: step.skill } : {}),
+            ...(isJira ? { job, jiraTicket: step.metadata?.jira_ticket as string } : {}),
+          },
+        };
+      });
 
       const newEdges: Edge[] = newNodes.slice(0, -1).map((node, i) => ({
         id: `e-${node.id}-${newNodes[i + 1]!.id}`,

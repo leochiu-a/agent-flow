@@ -4,6 +4,7 @@ export interface WorkflowStep {
   prompt: string;
   skip_permission?: boolean;
   skill?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export type ClaudeSessionMode = "isolated" | "shared";
