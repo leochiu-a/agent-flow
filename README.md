@@ -31,15 +31,16 @@ pnpm exec agent-flow run .ai-workflows/test-workflow.yaml
 
 ```yaml
 name: "My Workflow"
-claude_session: "shared"  # optional: share one Claude Code session across Claude steps
+claude_session: "shared" # optional: share one Claude Code session across Claude steps
 workflow:
   - name: "Claude AI step"
     agent: claude
     prompt: "Run `echo Hello World`, then summarize the latest git commit."
-    skip_permission: true   # passes --dangerously-skip-permissions to claude CLI
+    skip_permission: true # passes --dangerously-skip-permissions to claude CLI
 ```
 
 `claude_session` modes:
+
 - `isolated` (default): each Claude step starts a fresh session
 - `shared`: later Claude steps reuse the previous Claude step session via `claude --resume <session_id>`
 
@@ -66,6 +67,7 @@ agent-flow run <file>   # exits 0 on success, 1 on failure
 ### `@agent-flow/web`
 
 Next.js 15 App Router console.
+
 - **Sidebar**: lists workflows from `.ai-workflows/`
 - **Terminal**: streams real-time logs via `ReadableStream` API route
 
@@ -87,6 +89,7 @@ pnpm dev
 - `claude` CLI installed and authenticated (for AI steps)
 
 Optional environment variable:
+
 - `AGENT_FLOW_ALLOWED_DIRS` (comma-separated absolute paths): restricts which directories can be browsed/used as workflow working directories in the web UI. Defaults to `$HOME` and `process.cwd()`.
 
 ## Acknowledgements
