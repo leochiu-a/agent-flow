@@ -1,7 +1,9 @@
 import { EventEmitter } from "node:events";
+import os from "node:os";
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import yaml from "js-yaml";
+import { resolveSkillContent } from "./skillResolver";
 import type {
   WorkflowDefinition,
   WorkflowStep,
@@ -98,21 +100,33 @@ export class WorkflowRunner extends EventEmitter {
     return this.runClaudeStep(step);
   }
 
-  private runClaudeStep(step: WorkflowStep): Promise<StepResult> {
-    return new Promise((resolve) => {
-      this.log("info", `Running Claude agent: ${step.name}`, step.name);
-      const args: string[] = [];
-      if (step.skip_permission) args.push("--dangerously-skip-permissions");
-      if (this.claudeSessionMode === "shared" && this.lastClaudeSessionId) {
-        args.push("--resume", this.lastClaudeSessionId);
-        this.log("info", `Resuming Claude session: ${this.lastClaudeSessionId}`, step.name);
-      }
-      // Explicitly load user/project/local settings so MCP servers configured in
-      // Claude Code are consistently available across execution contexts.
-      args.push("--setting-sources", "user,project,local");
-      args.push("--output-format", "stream-json", "--verbose");
-      args.push("--print", step.prompt);
+  private async runClaudeStep(step: WorkflowStep): Promise<StepResult> {
+    this.log("info", `Running Claude agent: ${step.name}`, step.name);
+    const args: string[] = [];
+    if (step.skip_permission) args.push("--dangerously-skip-permissions");
+    if (this.claudeSessionMode === "shared" && this.lastClaudeSessionId) {
+      args.push("--resume", this.lastClaudeSessionId);
+      this.log("info", `Resuming Claude session: ${this.lastClaudeSessionId}`, step.name);
+    }
 
+    if (step.skill) {
+      const homeDir = this.spawnEnv.HOME ?? os.homedir();
+      const skillContent = await resolveSkillContent(step.skill, homeDir);
+      if (skillContent) {
+        args.push("--append-system-prompt", skillContent);
+        this.log("info", `Loaded skill: ${step.skill}`, step.name);
+      } else {
+        this.log("error", `Skill not found: ${step.skill}`, step.name);
+      }
+    }
+
+    // Explicitly load user/project/local settings so MCP servers configured in
+    // Claude Code are consistently available across execution contexts.
+    args.push("--setting-sources", "user,project,local");
+    args.push("--output-format", "stream-json", "--verbose");
+    args.push("--print", step.prompt);
+
+    return new Promise((resolve) => {
       const child = spawn("claude", args, {
         stdio: ["ignore", "pipe", "pipe"],
         env: this.spawnEnv,

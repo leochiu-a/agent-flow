@@ -3,6 +3,7 @@ export interface WorkflowStep {
   agent: "claude";
   prompt: string;
   skip_permission?: boolean;
+  skill?: string;
 }
 
 export type ClaudeSessionMode = "isolated" | "shared";

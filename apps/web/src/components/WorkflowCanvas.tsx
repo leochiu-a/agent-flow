@@ -7,6 +7,7 @@ import "@xyflow/react/dist/style.css";
 import { dump as yamlDump } from "js-yaml";
 import { StepNode } from "./StepNode";
 import { StepEditModal } from "./StepModals/StepEditModal";
+import type { StepFormData } from "./StepModals/ClaudeStepModal";
 import type { StepNodeData } from "./StepNode";
 import type { WorkflowGraph } from "@/hooks/useWorkflowGraph";
 
@@ -65,11 +66,11 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
   );
 
   const handleModalSave = useCallback(
-    (id: string, title: string, prompt: string, skipPermission: boolean) => {
+    (id: string, data: StepFormData) => {
       setIsModalSaving(true);
       setModalError(null);
 
-      graph.updateNode(id, { title, prompt, skipPermission });
+      graph.updateNode(id, data);
 
       if (activeFile && onSave) {
         onSave(activeFile, yamlDump(graph.getDefinition()));
@@ -137,6 +138,7 @@ export function WorkflowCanvas({ graph, activeFile, readOnly, onSave }: Workflow
           initialTitle={(modalNode.data as StepNodeData).title}
           initialPrompt={(modalNode.data as StepNodeData).prompt}
           initialSkipPermission={(modalNode.data as StepNodeData).skipPermission}
+          initialSkill={(modalNode.data as StepNodeData).skill}
           saving={modalState.mode === "edit" ? isModalSaving : false}
           error={modalState.mode === "edit" ? modalError : null}
           readOnly={modalState.mode === "preview"}

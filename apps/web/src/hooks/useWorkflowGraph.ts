@@ -36,7 +36,7 @@ export interface WorkflowGraph {
   deleteNode: (id: string) => void;
   updateNode: (
     id: string,
-    data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission">>,
+    data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill">>,
   ) => void;
   toggleNodeDisabled: (id: string) => void;
 
@@ -109,7 +109,10 @@ export function useWorkflowGraph({
   }, []);
 
   const updateNode = useCallback(
-    (id: string, data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission">>) => {
+    (
+      id: string,
+      data: Partial<Pick<StepNodeData, "title" | "prompt" | "skipPermission" | "skill">>,
+    ) => {
       const updater = (nds: Node[]) =>
         nds.map((node) => (node.id === id ? { ...node, data: { ...node.data, ...data } } : node));
       setNodesRef.current(updater);
@@ -141,6 +144,7 @@ export function useWorkflowGraph({
         agent: "claude",
         prompt: d.prompt || "",
         skip_permission: d.skipPermission ?? false,
+        ...(d.skill ? { skill: d.skill } : {}),
       };
     });
 
@@ -171,6 +175,7 @@ export function useWorkflowGraph({
           type: "claude",
           prompt: step.prompt ?? "",
           skipPermission: step.skip_permission ?? false,
+          ...(step.skill ? { skill: step.skill } : {}),
         },
       }));
 

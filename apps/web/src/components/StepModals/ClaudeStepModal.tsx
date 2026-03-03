@@ -3,15 +3,24 @@
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { SkillCombobox } from "@/components/SkillCombobox";
+
+export interface StepFormData {
+  title: string;
+  prompt: string;
+  skipPermission: boolean;
+  skill?: string;
+}
 
 interface ClaudeStepModalProps {
   initialTitle: string;
   initialPrompt: string;
   initialSkipPermission?: boolean;
+  initialSkill?: string;
   saving: boolean;
   error: string | null;
   readOnly?: boolean;
-  onSave: (title: string, prompt: string, skipPermission: boolean) => void;
+  onSave: (data: StepFormData) => void;
   onCancel: () => void;
 }
 
@@ -19,6 +28,7 @@ export function ClaudeStepModal({
   initialTitle,
   initialPrompt,
   initialSkipPermission = false,
+  initialSkill,
   saving,
   error,
   readOnly = false,
@@ -28,10 +38,14 @@ export function ClaudeStepModal({
   const [title, setTitle] = useState(initialTitle);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [skipPermission, setSkipPermission] = useState(initialSkipPermission);
+  const [skill, setSkill] = useState<string | undefined>(initialSkill);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isDirty =
-    title !== initialTitle || prompt !== initialPrompt || skipPermission !== initialSkipPermission;
+    title !== initialTitle ||
+    prompt !== initialPrompt ||
+    skipPermission !== initialSkipPermission ||
+    skill !== initialSkill;
 
   const handleCancel = () => {
     if (isDirty && !confirm("You have unsaved changes. Discard?")) return;
@@ -48,7 +62,7 @@ export function ClaudeStepModal({
       return;
     }
     setValidationError(null);
-    onSave(title, prompt, skipPermission);
+    onSave({ title, prompt, skipPermission, skill });
   };
 
   const displayError = validationError ?? error;
@@ -81,6 +95,11 @@ export function ClaudeStepModal({
           readOnly={readOnly}
           className="resize-y rounded-md border border-border bg-surface px-2.5 py-2 font-mono text-sm leading-relaxed text-dark outline-none transition placeholder:text-placeholder focus:border-pink read-only:bg-muted read-only:cursor-default"
         />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm text-ink">
+        Skill (optional)
+        <SkillCombobox value={skill} onChange={setSkill} disabled={readOnly} />
       </label>
 
       {!readOnly && (

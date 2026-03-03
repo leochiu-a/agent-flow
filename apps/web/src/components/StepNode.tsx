@@ -10,6 +10,7 @@ export interface StepNodeData {
   type: "claude";
   prompt: string;
   skipPermission?: boolean;
+  skill?: string;
   disabled?: boolean;
   readOnly?: boolean;
   onRequestEdit: (id: string) => void;
@@ -94,6 +95,13 @@ export function StepNode({ id, data, selected }: NodeProps) {
       <div className="mb-1.5 truncate text-sm font-semibold text-dark">
         {d.title || <span className="text-placeholder">Untitled step</span>}
       </div>
+
+      {/* Skill badge */}
+      {d.skill && (
+        <div className="mb-1 text-[11px] text-muted-fg">
+          Skill: <span className="font-medium">{d.skill}</span>
+        </div>
+      )}
 
       {/* Prompt preview */}
       {preview ? (

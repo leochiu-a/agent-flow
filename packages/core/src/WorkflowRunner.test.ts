@@ -445,3 +445,149 @@ test("uses configured cwd when spawning Claude", async () => {
     await rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+test("step with skill passes --append-system-prompt with skill file content", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-skill-"));
+  await createMockClaudeBinary(tmpDir);
+  const argsLogPath = path.join(tmpDir, "claude-args.log");
+
+  // Create a fake ~/.claude/skills/code-review/SKILL.md
+  const fakeHome = path.join(tmpDir, "fakehome");
+  const skillDir = path.join(fakeHome, ".claude", "skills", "code-review");
+  await mkdir(skillDir, { recursive: true });
+  await writeFile(path.join(skillDir, "SKILL.md"), "You are a code reviewer.", "utf-8");
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_ARGS_LOG: argsLogPath,
+        HOME: fakeHome,
+      },
+    });
+
+    const result = await runner.run({
+      name: "skill-test",
+      workflow: [{ name: "review", agent: "claude", prompt: "review code", skill: "code-review" }],
+    });
+
+    assert.equal(result.success, true);
+    const args = (await readFile(argsLogPath, "utf-8")).trim().split("\n");
+    const appendIdx = args.indexOf("--append-system-prompt");
+    assert.ok(appendIdx >= 0, "should pass --append-system-prompt");
+    assert.equal(args[appendIdx + 1], "You are a code reviewer.");
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("step with missing skill logs warning but still succeeds", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-skill-missing-"));
+  await createMockClaudeBinary(tmpDir);
+  const argsLogPath = path.join(tmpDir, "claude-args.log");
+
+  const fakeHome = path.join(tmpDir, "fakehome");
+  await mkdir(path.join(fakeHome, ".claude"), { recursive: true });
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_ARGS_LOG: argsLogPath,
+        HOME: fakeHome,
+      },
+    });
+    const logs: LogEntry[] = [];
+    runner.on("log", (entry) => logs.push(entry));
+
+    const result = await runner.run({
+      name: "missing-skill",
+      workflow: [{ name: "step", agent: "claude", prompt: "hello", skill: "nonexistent" }],
+    });
+
+    assert.equal(result.success, true);
+    const args = (await readFile(argsLogPath, "utf-8")).trim().split("\n");
+    assert.equal(
+      args.includes("--append-system-prompt"),
+      false,
+      "should NOT pass --append-system-prompt",
+    );
+    assert.ok(
+      logs.some((l) => l.level === "error" && l.message.includes("nonexistent")),
+      "should log warning about missing skill",
+    );
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("step without skill does not include --append-system-prompt", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-no-skill-"));
+  await createMockClaudeBinary(tmpDir);
+  const argsLogPath = path.join(tmpDir, "claude-args.log");
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_ARGS_LOG: argsLogPath,
+      },
+    });
+
+    const result = await runner.run({
+      name: "no-skill",
+      workflow: [{ name: "step", agent: "claude", prompt: "hello" }],
+    });
+
+    assert.equal(result.success, true);
+    const args = (await readFile(argsLogPath, "utf-8")).trim().split("\n");
+    assert.equal(args.includes("--append-system-prompt"), false);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("skill resolution falls back to plugin skills when user skill not found", async () => {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "agent-flow-skill-plugin-"));
+  await createMockClaudeBinary(tmpDir);
+  const argsLogPath = path.join(tmpDir, "claude-args.log");
+
+  const fakeHome = path.join(tmpDir, "fakehome");
+  // Create plugin skill: ~/.claude/plugins/marketplaces/default/plugins/my-plugin/skills/lint/SKILL.md
+  const pluginSkillDir = path.join(
+    fakeHome,
+    ".claude",
+    "plugins",
+    "marketplaces",
+    "default",
+    "plugins",
+    "my-plugin",
+    "skills",
+    "lint",
+  );
+  await mkdir(pluginSkillDir, { recursive: true });
+  await writeFile(path.join(pluginSkillDir, "SKILL.md"), "You are a linter.", "utf-8");
+
+  try {
+    const runner = new WorkflowRunner({
+      env: {
+        PATH: `${tmpDir}:${process.env.PATH ?? ""}`,
+        CLAUDE_ARGS_LOG: argsLogPath,
+        HOME: fakeHome,
+      },
+    });
+
+    const result = await runner.run({
+      name: "plugin-skill",
+      workflow: [{ name: "lint", agent: "claude", prompt: "lint code", skill: "lint" }],
+    });
+
+    assert.equal(result.success, true);
+    const args = (await readFile(argsLogPath, "utf-8")).trim().split("\n");
+    const appendIdx = args.indexOf("--append-system-prompt");
+    assert.ok(appendIdx >= 0, "should pass --append-system-prompt from plugin skill");
+    assert.equal(args[appendIdx + 1], "You are a linter.");
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});

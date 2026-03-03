@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect } from "react";
 import { ClaudeStepModal } from "./ClaudeStepModal";
+import type { StepFormData } from "./ClaudeStepModal";
 
 interface StepEditModalProps {
   stepId: string;
   initialTitle: string;
   initialPrompt: string;
   initialSkipPermission?: boolean;
+  initialSkill?: string;
   saving: boolean;
   error: string | null;
   readOnly?: boolean;
-  onSave: (id: string, title: string, prompt: string, skipPermission: boolean) => void;
+  onSave: (id: string, data: StepFormData) => void;
   onClose: () => void;
 }
 
@@ -20,6 +22,7 @@ export function StepEditModal({
   initialTitle,
   initialPrompt,
   initialSkipPermission,
+  initialSkill,
   saving,
   error,
   readOnly,
@@ -35,8 +38,8 @@ export function StepEditModal({
   }, [onClose]);
 
   const handleSave = useCallback(
-    (title: string, detail: string, skipPermission: boolean) => {
-      onSave(stepId, title, detail, skipPermission);
+    (data: StepFormData) => {
+      onSave(stepId, data);
     },
     [stepId, onSave],
   );
@@ -53,6 +56,7 @@ export function StepEditModal({
           initialTitle={initialTitle}
           initialPrompt={initialPrompt}
           initialSkipPermission={initialSkipPermission}
+          initialSkill={initialSkill}
           saving={saving}
           error={error}
           readOnly={readOnly}
