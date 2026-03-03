@@ -1,12 +1,18 @@
-import type { MouseEvent } from "react";
-import { Trash2 } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface WorkflowItemProps {
   filename: string;
   isSelected: boolean;
   onWorkflowClick: () => void;
   isDeleting?: boolean;
-  onDelete: (e: MouseEvent) => void;
+  onDelete: () => void;
+  onRename: () => void;
 }
 
 export function WorkflowItem({
@@ -15,6 +21,7 @@ export function WorkflowItem({
   onWorkflowClick,
   isDeleting,
   onDelete,
+  onRename,
 }: WorkflowItemProps) {
   return (
     <div
@@ -28,16 +35,25 @@ export function WorkflowItem({
         <span className="block truncate text-left">{filename}</span>
       </button>
 
-      <button
-        type="button"
-        title={`Delete workflow ${filename}`}
-        aria-label={`Delete workflow ${filename}`}
-        disabled={isDeleting}
-        onClick={onDelete}
-        className="shrink-0 rounded p-0.5 text-muted-fg opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Trash2 size={12} />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Workflow options for ${filename}`}
+            disabled={isDeleting}
+            onClick={(e) => e.stopPropagation()}
+            className="shrink-0 rounded p-0.5 text-muted-fg opacity-0 transition group-hover:opacity-100 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <MoreHorizontal size={12} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onRename}>Rename</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

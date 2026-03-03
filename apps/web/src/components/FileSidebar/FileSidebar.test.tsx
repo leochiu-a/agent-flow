@@ -21,7 +21,10 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-function setupFetch({ deleteOk = true }: { deleteOk?: boolean } = {}) {
+function setupFetch({
+  deleteOk = true,
+  renameOk = true,
+}: { deleteOk?: boolean; renameOk?: boolean } = {}) {
   fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? "GET";
@@ -47,6 +50,14 @@ function setupFetch({ deleteOk = true }: { deleteOk?: boolean } = {}) {
         ok: deleteOk,
         status: deleteOk ? 200 : 500,
         json: async () => (deleteOk ? { ok: true } : { error: "delete failed" }),
+      };
+    }
+
+    if (url === "/api/workflow/rename" && method === "POST") {
+      return {
+        ok: renameOk,
+        status: renameOk ? 200 : 500,
+        json: async () => (renameOk ? { ok: true, filename: "renamed.yaml" } : { error: "failed" }),
       };
     }
 
@@ -84,7 +95,8 @@ test("opens delete dialog and cancel keeps workflow", async () => {
   await renderSidebar();
   await screen.findByText("demo.yaml");
 
-  await user.click(screen.getByRole("button", { name: "Delete workflow demo.yaml" }));
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Delete"));
   expect(screen.getByText("Delete this workflow?")).toBeTruthy();
 
   await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -104,7 +116,8 @@ test("confirm delete removes workflow and navigates home when deleting selected 
   await renderSidebar({ selectedFile: "demo.yaml" });
   await screen.findByText("demo.yaml");
 
-  await user.click(screen.getByRole("button", { name: "Delete workflow demo.yaml" }));
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Delete"));
   await user.click(screen.getByRole("button", { name: "Delete" }));
 
   await waitFor(() => {
@@ -129,11 +142,92 @@ test("failed delete shows alert and keeps workflow", async () => {
   await renderSidebar();
   await screen.findByText("demo.yaml");
 
-  await user.click(screen.getByRole("button", { name: "Delete workflow demo.yaml" }));
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Delete"));
   await user.click(screen.getByRole("button", { name: "Delete" }));
 
   await waitFor(() => {
     expect(alertMock).toHaveBeenCalledWith("Failed to delete. Please try again.");
   });
   expect(screen.getByText("demo.yaml")).toBeTruthy();
+});
+
+test("opens rename dialog and cancel keeps workflow name", async () => {
+  setupFetch();
+  const user = userEvent.setup();
+
+  await renderSidebar();
+  await screen.findByText("demo.yaml");
+
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Rename"));
+  expect(screen.getByText("Rename workflow")).toBeTruthy();
+
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.getByText("demo.yaml")).toBeTruthy();
+  expect(fetchMock.mock.calls.some(([url]) => String(url) === "/api/workflow/rename")).toBe(false);
+});
+
+test("confirm rename updates workflow name in sidebar", async () => {
+  setupFetch();
+  const user = userEvent.setup();
+
+  await renderSidebar();
+  await screen.findByText("demo.yaml");
+
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Rename"));
+
+  const input = screen.getByRole("textbox");
+  await user.clear(input);
+  await user.type(input, "renamed.yaml");
+  await user.click(screen.getByRole("button", { name: "Rename" }));
+
+  await waitFor(() => {
+    expect(screen.getByText("renamed.yaml")).toBeTruthy();
+  });
+  expect(screen.queryByText("demo.yaml")).toBeNull();
+});
+
+test("failed rename shows alert and keeps original name", async () => {
+  setupFetch({ renameOk: false });
+  const user = userEvent.setup();
+  const alertMock = vi.fn();
+  vi.stubGlobal("alert", alertMock);
+
+  await renderSidebar();
+  await screen.findByText("demo.yaml");
+
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Rename"));
+
+  const input = screen.getByRole("textbox");
+  await user.clear(input);
+  await user.type(input, "renamed.yaml");
+  await user.click(screen.getByRole("button", { name: "Rename" }));
+
+  await waitFor(() => {
+    expect(alertMock).toHaveBeenCalledWith("Failed to rename. Please try again.");
+  });
+  expect(screen.getByText("demo.yaml")).toBeTruthy();
+});
+
+test("renaming currently-selected workflow updates navigation target", async () => {
+  setupFetch();
+  const user = userEvent.setup();
+
+  await renderSidebar({ selectedFile: "demo.yaml" });
+  await screen.findByText("demo.yaml");
+
+  await user.click(screen.getByRole("button", { name: "Workflow options for demo.yaml" }));
+  await user.click(await screen.findByText("Rename"));
+
+  const input = screen.getByRole("textbox");
+  await user.clear(input);
+  await user.type(input, "renamed.yaml");
+  await user.click(screen.getByRole("button", { name: "Rename" }));
+
+  await waitFor(() => {
+    expect(pushMock).toHaveBeenCalledWith("/workflow/renamed.yaml");
+  });
 });

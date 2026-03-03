@@ -11,6 +11,7 @@ import { SidebarHeader } from "./SidebarHeader";
 import { CreateWorkflowDialog } from "./CreateWorkflowDialog";
 import { FolderBrowserDialog } from "./FolderBrowserDialog";
 import { DeleteWorkflowDialog } from "./DeleteWorkflowDialog";
+import { RenameWorkflowDialog } from "./RenameWorkflowDialog";
 import { WorkflowItem } from "./WorkflowItem";
 import { SessionItem } from "./SessionItem";
 import type { SessionDetail, SessionSummaryWithWorkflow } from "./types";
@@ -33,6 +34,7 @@ interface FileSidebarProps {
 
 const FOLDERS_STORAGE_KEY = "agent-flow.folders";
 const DELETE_FAILED_MESSAGE = "Failed to delete. Please try again.";
+const RENAME_FAILED_MESSAGE = "Failed to rename. Please try again.";
 let WORKFLOW_FILES_CACHE: string[] | null = null;
 
 function getFolderDisplayName(folderPath: string): string {
@@ -72,6 +74,8 @@ export function FileSidebar({
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [workflowToDelete, setWorkflowToDelete] = useState<string | null>(null);
   const [deletingWorkflow, setDeletingWorkflow] = useState<string | null>(null);
+  const [workflowToRename, setWorkflowToRename] = useState<string | null>(null);
+  const [renamingWorkflow, setRenamingWorkflow] = useState<string | null>(null);
 
   // Auto-expand the selected folder when it changes (e.g. after navigation)
   useEffect(() => {
@@ -272,6 +276,42 @@ export function FileSidebar({
     }
   };
 
+  const handleRenameWorkflow = async (newName: string) => {
+    if (!workflowToRename || renamingWorkflow) return;
+
+    const from = workflowToRename;
+    const to = newName.endsWith(".yaml") || newName.endsWith(".yml") ? newName : `${newName}.yaml`;
+    setRenamingWorkflow(from);
+
+    try {
+      const res = await fetch("/api/workflow/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from, to }),
+      });
+      if (!res.ok) {
+        alert(RENAME_FAILED_MESSAGE);
+        return;
+      }
+
+      setFiles((prev) => {
+        const next = prev.map((filename) => (filename === from ? to : filename));
+        WORKFLOW_FILES_CACHE = next;
+        return next;
+      });
+
+      if (selectedFile === from) {
+        router.push(`/workflow/${encodeURIComponent(to)}`);
+      }
+
+      setWorkflowToRename(null);
+    } catch {
+      alert(RENAME_FAILED_MESSAGE);
+    } finally {
+      setRenamingWorkflow(null);
+    }
+  };
+
   const sessionsByFolder = useMemo(() => {
     const grouped: Record<string, SessionSummaryWithWorkflow[]> = {};
     for (const session of folderSessionList) {
@@ -339,10 +379,8 @@ export function FileSidebar({
               isSelected={selectedFile === filename}
               isDeleting={deletingWorkflow === filename}
               onWorkflowClick={() => void selectFile(filename)}
-              onDelete={(event) => {
-                event.stopPropagation();
-                setWorkflowToDelete(filename);
-              }}
+              onDelete={() => setWorkflowToDelete(filename)}
+              onRename={() => setWorkflowToRename(filename)}
             />
           ))
         )}
@@ -479,6 +517,18 @@ export function FileSidebar({
           }
         }}
         onConfirmDelete={() => void handleDeleteWorkflow()}
+      />
+
+      <RenameWorkflowDialog
+        open={workflowToRename !== null}
+        workflowName={workflowToRename}
+        isRenaming={Boolean(renamingWorkflow)}
+        onOpenChange={(open) => {
+          if (!open && !renamingWorkflow) {
+            setWorkflowToRename(null);
+          }
+        }}
+        onConfirmRename={(newName) => void handleRenameWorkflow(newName)}
       />
     </aside>
   );
