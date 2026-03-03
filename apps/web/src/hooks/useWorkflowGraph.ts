@@ -114,7 +114,8 @@ export function useWorkflowGraph({
           title: titleForJob(jobId),
           type: "jira",
           job: "get-jira-ticket",
-          prompt: "",
+          prompt:
+            "Summarize the ticket and output a clear implementation plan with acceptance criteria.",
           jiraTicket: "",
           skipPermission: false,
         };

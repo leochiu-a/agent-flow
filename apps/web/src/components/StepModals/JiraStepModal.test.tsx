@@ -21,7 +21,7 @@ test("renders step name, ticket ID and prompt fields", () => {
 
   expect(screen.getByPlaceholderText("Step title...")).toBeTruthy();
   expect(screen.getByPlaceholderText("e.g. PROJ-123 or https://...")).toBeTruthy();
-  expect(screen.getByPlaceholderText("Additional instructions for Claude...")).toBeTruthy();
+  expect(screen.getByPlaceholderText("Enter prompt for Claude...")).toBeTruthy();
 });
 
 test("calls onSave with form data including jiraTicket", async () => {

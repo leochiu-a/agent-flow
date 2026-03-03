@@ -96,11 +96,11 @@ export function JiraStepModal({
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-ink">
-        Additional instructions (optional)
+        Prompt
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Additional instructions for Claude..."
+          placeholder="Enter prompt for Claude..."
           rows={6}
           readOnly={readOnly}
           className="resize-y rounded-md border border-border bg-surface px-2.5 py-2 font-mono text-sm leading-relaxed text-dark outline-none transition placeholder:text-placeholder focus:border-jira read-only:bg-muted read-only:cursor-default"
