@@ -1,96 +1,42 @@
 # Agent Flow
 
-A local AI workflow engine — run YAML-defined workflows with Claude AI agents.
+A local AI workflow engine — run multi-step AI workflows with Claude.
 
-## Monorepo Structure
+## What is this?
 
-```
-agent-flow/
-├── packages/
-│   ├── core/          # @agent-flow/core — WorkflowRunner engine
-│   └── cli/           # @agent-flow/cli  — `agent-flow run <file>` CLI
-├── apps/
-│   └── web/           # @agent-flow/web  — Next.js web console
-└── .ai-workflows/     # Sample workflow YAML files
-```
+Agent Flow lets you chain Claude AI tasks together in a workflow. Each step can run a Claude prompt, and steps can share context with each other. Run and monitor workflows through the web console.
 
-## Quick Start
+## Prerequisites
+
+Before you start, make sure you have:
+
+1. **Node.js >= 20** — [download here](https://nodejs.org/)
+2. **pnpm >= 10** — install with `npm install -g pnpm`
+3. **Claude CLI** — installed and authenticated (`claude` command must work in your terminal)
+
+## Quick Started
+
+### Step 1 — Install dependencies
 
 ```bash
 pnpm install
-
-# Start the web console (no build needed)
-pnpm dev
-
-# Build CLI, then run a workflow
-pnpm --filter @agent-flow/cli build
-pnpm exec agent-flow run .ai-workflows/test-workflow.yaml
 ```
 
-## Workflow YAML Format
-
-```yaml
-name: "My Workflow"
-claude_session: "shared" # optional: share one Claude Code session across Claude steps
-workflow:
-  - name: "Claude AI step"
-    agent: claude
-    prompt: "Run `echo Hello World`, then summarize the latest git commit."
-    skip_permission: true # passes --dangerously-skip-permissions to claude CLI
-```
-
-`claude_session` modes:
-
-- `isolated` (default): each Claude step starts a fresh session
-- `shared`: later Claude steps reuse the previous Claude step session via `claude --resume <session_id>`
-
-## Packages
-
-### `@agent-flow/core`
-
-Pure Node.js engine. Reads YAML, runs Claude CLI, emits `log` and `done` events via `EventEmitter`.
-
-```ts
-import { WorkflowRunner } from "@agent-flow/core";
-
-const runner = new WorkflowRunner();
-runner.on("log", (entry) => console.log(entry.message));
-const result = await runner.runFile("./workflow.yaml");
-```
-
-### `@agent-flow/cli`
+### Step 2 — Start the web console
 
 ```bash
-agent-flow run <file>   # exits 0 on success, 1 on failure
-```
-
-### `@agent-flow/web`
-
-Next.js 15 App Router console.
-
-- **Sidebar**: lists workflows from `.ai-workflows/`
-- **Terminal**: streams real-time logs via `ReadableStream` API route
-
-## Development
-
-```bash
-# Watch mode for core + cli
-pnpm --filter @agent-flow/core dev
-pnpm --filter @agent-flow/cli dev
-
-# Web dev server
 pnpm dev
 ```
 
-## Requirements
+Open [http://localhost:3000](http://localhost:3000). The sidebar lists all workflows in `.ai-workflows/`. Click one to run it and watch the logs stream in real time.
 
-- Node.js >= 20
-- pnpm >= 10
-- `claude` CLI installed and authenticated (for AI steps)
+### Step 3 — Run a workflow
 
-Optional environment variable:
+1. Select a **folder** from the sidebar — this sets the working directory for the workflow
+2. Choose a **workflow** under that folder to run
+3. Click **Run** and watch the logs stream in real time
 
-- `AGENT_FLOW_ALLOWED_DIRS` (comma-separated absolute paths): restricts which directories can be browsed/used as workflow working directories in the web UI. Defaults to `$HOME` and `process.cwd()`.
+You can also create your own workflow: click **New Workflow** in the sidebar, add Claude steps with your own prompts.
 
 ## Acknowledgements
 
