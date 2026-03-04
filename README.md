@@ -10,7 +10,7 @@ Agent Flow lets you chain Claude AI tasks together in a workflow. Each step can 
 
 Before you start, make sure you have:
 
-1. **Node.js >= 20** — [download here](https://nodejs.org/)
+1. **Node.js >= 22** — [download here](https://nodejs.org/)
 2. **pnpm >= 10** — install with `npm install -g pnpm`
 3. **Claude CLI** — installed and authenticated (`claude` command must work in your terminal)
 
