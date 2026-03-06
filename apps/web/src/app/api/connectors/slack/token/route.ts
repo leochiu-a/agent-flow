@@ -1,6 +1,6 @@
 /**
- * Dev / quick-start: manually provide a Slack bot token instead of going through OAuth.
- * Useful for local POC where you just want to paste an xoxb-... token directly.
+ * Dev / quick-start: manually provide a Slack token instead of going through OAuth.
+ * Accepts both bot tokens (xoxb-...) and user tokens (xoxp-...).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { upsertConnector } from "@/lib/connectorStorage";
@@ -26,11 +26,8 @@ interface SlackAuthTestResponse {
 export async function POST(req: NextRequest) {
   const { token } = (await req.json()) as TokenRequest;
 
-  if (!token?.startsWith("xoxb-")) {
-    return NextResponse.json(
-      { error: "Token must be a bot token starting with xoxb-" },
-      { status: 400 },
-    );
+  if (!token?.startsWith("xoxb-") && !token?.startsWith("xoxp-")) {
+    return NextResponse.json({ error: "Token must start with xoxb- or xoxp-" }, { status: 400 });
   }
 
   // Verify the token works
