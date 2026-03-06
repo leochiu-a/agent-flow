@@ -13,7 +13,7 @@ interface SlackOAuthResponse {
   error?: string;
   access_token?: string;
   token_type?: string;
-  authed_user?: { id: string };
+  authed_user?: { id: string; access_token?: string };
   team?: { id: string; name: string };
   bot_user_id?: string;
 }
@@ -126,7 +126,8 @@ export async function GET(req: NextRequest) {
     return redirectError(appBaseUrl, stateRecord.returnTo);
   }
 
-  if (!oauthData.ok || !oauthData.access_token) {
+  const accessToken = oauthData.authed_user?.access_token ?? oauthData.access_token;
+  if (!oauthData.ok || !accessToken) {
     logConnectorEvent({
       event: "connector_oauth_callback",
       result: "failed",
@@ -147,7 +148,7 @@ export async function GET(req: NextRequest) {
     workspace: {
       teamId: oauthData.team?.id,
       teamName: oauthData.team?.name,
-      botUserId: oauthData.bot_user_id,
+      botUserId: oauthData.authed_user?.id ?? oauthData.bot_user_id,
     },
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -158,7 +159,7 @@ export async function GET(req: NextRequest) {
   // Register the Slack MCP server in Claude user config using standard
   // command/args/env so Claude Code can auto-start it.
   if (oauthData.team?.id) {
-    await registerSlackMcp({ botToken: oauthData.access_token, teamId: oauthData.team.id });
+    await registerSlackMcp({ botToken: accessToken, teamId: oauthData.team.id });
   }
 
   logConnectorEvent({
