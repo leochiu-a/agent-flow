@@ -33,10 +33,12 @@ export async function GET(req: NextRequest) {
     "channels:read",
     "groups:read",
     "users:read",
+    "reactions:read",
+    "reactions:write",
   ].join(",");
   const authorizeUrl = new URL("https://slack.com/oauth/v2/authorize");
   authorizeUrl.searchParams.set("client_id", oauthConfig.clientId);
-  authorizeUrl.searchParams.set("scope", scopes);
+  authorizeUrl.searchParams.set("user_scope", scopes);
   authorizeUrl.searchParams.set("redirect_uri", oauthConfig.redirectUri);
   authorizeUrl.searchParams.set("state", state);
 
